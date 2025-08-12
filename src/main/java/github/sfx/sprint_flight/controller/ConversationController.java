@@ -21,20 +21,22 @@ public class ConversationController {
     private ConversationService conversationService;
     
     /**
-     * Process natural language flight queries
+     * Process natural language flight queries with conversation context
      * Example: POST /api/conversation/query
-     * Body: {"query": "Show me American Airlines flights from JFK to LAX"}
+     * Body: {"query": "Show me American Airlines flights from JFK to LAX", "conversationId": "conv_123"}
      */
     @PostMapping("/query")
     public ResponseEntity<Map<String, Object>> processQuery(@RequestBody Map<String, String> request) {
         String query = request.get("query");
-        logger.info("Received conversation query: {}", query);
+        String conversationId = request.get("conversationId");
+        logger.info("Received conversation query: {} for conversation: {}", query, conversationId);
         
-        String response = conversationService.processQuery(query);
+        String response = conversationService.processQuery(query, conversationId);
         
         Map<String, Object> result = new HashMap<>();
         result.put("query", query);
         result.put("response", response);
+        result.put("conversationId", conversationId);
         result.put("timestamp", java.time.Instant.now().toString());
         
         return ResponseEntity.ok(result);

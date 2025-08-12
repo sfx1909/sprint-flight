@@ -74,6 +74,23 @@
             min-width: 2rem;
         }
 
+        .message-content ul {
+            margin: 0.75rem 0;
+            padding-left: 1.5rem;
+            list-style-type: disc;
+        }
+
+        .message-content li {
+            margin: 0.375rem 0;
+            line-height: 1.5;
+        }
+
+        .message-content ol {
+            margin: 0.75rem 0;
+            padding-left: 1.5rem;
+            list-style-type: decimal;
+        }
+
         .message.user .message-content {
             background-color: hsl(var(--primary));
             color: hsl(var(--primary-foreground));
@@ -398,6 +415,9 @@
         <div class="chat-header">
             <h1>✈️ Sprint Flight Assistant</h1>
             <p>Your intelligent flight search companion</p>
+            <button onclick="clearConversation()" style="position: absolute; top: 1rem; right: 1rem; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.75rem; cursor: pointer;">
+                🗑️ Clear Chat
+            </button>
         </div>
 
         <div class="chat-messages scrollbar-thin" id="chatMessages">
@@ -443,6 +463,30 @@
     <script>
         const API_BASE_URL = 'http://localhost:8080';
         let isTyping = false;
+        let conversationId = generateConversationId();
+
+        // Generate a unique conversation ID for this session
+        function generateConversationId() {
+            return 'conv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // Clear conversation and start fresh
+        function clearConversation() {
+            conversationId = generateConversationId();
+            const messagesContainer = document.getElementById('chatMessages');
+            messagesContainer.innerHTML = `
+                <div class="welcome-message">
+                    <h2>👋 Welcome to Sprint Flight!</h2>
+                    <p>I'm your AI flight assistant. Ask me anything about flights in natural language:</p>
+                    <div class="suggestions" style="justify-content: center; margin-top: 1rem;">
+                        <button class="suggestion-chip" onclick="sendSuggestion('Show me flights from London to Tokyo')">🌍 LHR to NRT</button>
+                        <button class="suggestion-chip" onclick="sendSuggestion('Emirates flights from Dubai')">✈️ Emirates Dubai</button>
+                        <button class="suggestion-chip" onclick="sendSuggestion('What flights are leaving from Frankfurt?')">🛫 Frankfurt departures</button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('messageInput').focus();
+        }
 
         // Initialize chat
         document.addEventListener('DOMContentLoaded', function() {
@@ -474,7 +518,10 @@
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ query: message })
+                body: JSON.stringify({ 
+                    query: message,
+                    conversationId: conversationId 
+                })
             })
             .then(response => response.json())
             .then(data => {
@@ -526,24 +573,72 @@
         }
 
         function formatMessage(message) {
-            // Convert markdown-style formatting to HTML
+            // Safely escape HTML first to prevent XSS
             let formatted = message
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\\"/g, '"')      // Handle escaped quotes
-                .replace(/\\n/g, '<br>')  // Handle escaped newlines
-                .replace(/\r\n/g, '<br>') // Handle Windows line endings
-                .replace(/\n/g, '<br>')   // Handle Unix line endings
-                .replace(/\r/g, '<br>')   // Handle Mac line endings
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+            
+            // Now apply safe formatting
+            // Convert line breaks
+            formatted = formatted
+                .replace(/\r\n/g, '\n')
+                .replace(/\r/g, '\n')
+                .replace(/\n/g, '<br>');
+            
+            // Convert **bold** to <strong>
+            formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            // Convert *italic* to <em> (but not bullet points)
+            formatted = formatted.replace(/(?<!\w)\*([^*<>\n]+?)\*(?!\w)/g, '<em>$1</em>');
+            
+            // Convert bullet points to lists
+            const lines = formatted.split('<br>');
+            let inList = false;
+            let result = [];
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
                 
-            // Convert markdown bullet points to HTML
-            // Handle bullet points that start with * or •
-            formatted = formatted.replace(/^[\s]*[\*•]\s*(.+)$/gm, '• $1');
-            formatted = formatted.replace(/<br>[\s]*[\*•]\s*(.+)/g, '<br>• $1');
+                // Check if this line is a bullet point
+                if (line.match(/^[\s]*[•\*\-]\s+(.+)/)) {
+                    if (!inList) {
+                        result.push('<ul>');
+                        inList = true;
+                    }
+                    const content = line.replace(/^[\s]*[•\*\-]\s+/, '');
+                    result.push(`<li>${content}</li>`);
+                } else if (line === '') {
+                    // Empty line - if we're in a list, check if next line continues the list
+                    if (inList && i + 1 < lines.length) {
+                        const nextLine = lines[i + 1].trim();
+                        if (!nextLine.match(/^[\s]*[•\*\-]\s+(.+)/)) {
+                            result.push('</ul>');
+                            inList = false;
+                        }
+                    }
+                    if (!inList) result.push('<br>');
+                } else {
+                    // Regular line
+                    if (inList) {
+                        result.push('</ul>');
+                        inList = false;
+                    }
+                    if (line) result.push(line + '<br>');
+                }
+            }
             
-            // Convert remaining single asterisks (not bullets) to emphasis
-            formatted = formatted.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+            // Close any open list
+            if (inList) {
+                result.push('</ul>');
+            }
             
-            return formatted;
+            // Clean up extra <br> tags at the end
+            let final = result.join('').replace(/<br>$/, '');
+            
+            return final;
         }
 
         function createFlightCard(flight) {

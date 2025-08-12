@@ -2,8 +2,10 @@ package github.sfx.sprint_flight.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import jakarta.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -11,11 +13,267 @@ import java.util.regex.Pattern;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class NaturalLanguageProcessor {
     
     private static final Logger logger = LoggerFactory.getLogger(NaturalLanguageProcessor.class);
+    
+    // Dynamic country-to-airport mapping cache
+    private final Map<String, List<String>> countryAirportCache = new ConcurrentHashMap<>();
+    
+    @PostConstruct
+    public void initializeCountryMappings() {
+        logger.info("Initializing dynamic country-to-airport mappings...");
+        buildCountryAirportMappings();
+        logger.info("Country mappings initialized with {} countries", countryAirportCache.size());
+    }
+    
+    /**
+     * Build comprehensive country-to-airport mappings
+     */
+    private void buildCountryAirportMappings() {
+        // North America
+        addCountryMapping("US", "JFK", "LAX", "ORD", "ATL", "DFW", "MIA", "SFO", "BOS", "SEA", "DEN", "LAS", "PHX", "IAH", "LGA", "EWR", "MDW");
+        addCountryMapping("CA", "YYZ", "YVR", "YUL", "YYC", "YEG", "YOW");
+        addCountryMapping("MX", "MEX", "CUN", "GDL");
+        
+        // Europe
+        addCountryMapping("GB", "LHR", "LGW", "STN", "LTN", "MAN", "EDI", "GLA");
+        addCountryMapping("FR", "CDG", "ORY", "NCE", "LYS");
+        addCountryMapping("DE", "FRA", "MUC", "TXL", "DUS", "HAM", "CGN");
+        addCountryMapping("IT", "FCO", "MXP", "LIN", "NAP", "VCE");
+        addCountryMapping("ES", "MAD", "BCN", "PMI", "LAS");
+        addCountryMapping("NL", "AMS");
+        addCountryMapping("BE", "BRU");
+        addCountryMapping("CH", "ZUR");
+        addCountryMapping("AT", "VIE");
+        addCountryMapping("DK", "CPH");
+        addCountryMapping("SE", "ARN");
+        addCountryMapping("NO", "OSL");
+        addCountryMapping("FI", "HEL");
+        addCountryMapping("RU", "SVO", "DME", "LED");
+        addCountryMapping("PL", "WAW");
+        addCountryMapping("CZ", "PRG");
+        addCountryMapping("HU", "BUD");
+        addCountryMapping("RO", "OTP");
+        addCountryMapping("BG", "SOF");
+        addCountryMapping("GR", "ATH");
+        addCountryMapping("TR", "IST", "SAW");
+        
+        // Asia-Pacific
+        addCountryMapping("JP", "NRT", "HND", "KIX", "ITM", "NGO");
+        addCountryMapping("CN", "PEK", "PKX", "PVG", "SHA", "CAN", "SZX", "CTU", "XIY");
+        addCountryMapping("KR", "ICN", "GMP", "PUS");
+        addCountryMapping("IN", "DEL", "BOM", "BLR", "MAA", "CCU", "HYD", "COK", "AMD", "PNQ", "GOI");
+        addCountryMapping("SG", "SIN");
+        addCountryMapping("MY", "KUL");
+        addCountryMapping("TH", "BKK", "DMK", "HKT");
+        addCountryMapping("ID", "CGK", "DPS");
+        addCountryMapping("PH", "MNL");
+        addCountryMapping("VN", "SGN", "HAN");
+        addCountryMapping("AU", "SYD", "MEL", "BNE", "PER", "ADL", "CNS");
+        addCountryMapping("NZ", "AKL", "CHC", "WLG");
+        
+        // Middle East
+        addCountryMapping("AE", "DXB", "AUH");
+        addCountryMapping("QA", "DOH");
+        addCountryMapping("SA", "RUH", "JED");
+        addCountryMapping("KW", "KWI");
+        addCountryMapping("BH", "BAH");
+        addCountryMapping("OM", "MCT");
+        addCountryMapping("IL", "TLV");
+        addCountryMapping("JO", "AMM");
+        addCountryMapping("LB", "BEY");
+        addCountryMapping("IR", "IKA");
+        
+        // Africa
+        addCountryMapping("ZA", "JNB", "CPT", "DUR");
+        addCountryMapping("EG", "CAI");
+        addCountryMapping("MA", "CMN");
+        addCountryMapping("NG", "LOS", "ABV");
+        addCountryMapping("KE", "NBO");
+        addCountryMapping("ET", "ADD");
+        addCountryMapping("GH", "ACC");
+        
+        // South America
+        addCountryMapping("BR", "GRU", "GIG", "BSB", "FOR", "SSA", "REC");
+        addCountryMapping("AR", "EZE", "AEP");
+        addCountryMapping("CL", "SCL");
+        addCountryMapping("PE", "LIM");
+        addCountryMapping("CO", "BOG", "MDE");
+        addCountryMapping("EC", "UIO");
+        addCountryMapping("VE", "CCS");
+        
+        // Add common country name aliases
+        addCountryAliases();
+    }
+    
+    /**
+     * Add country mapping with multiple airports
+     */
+    private void addCountryMapping(String countryCode, String... airportCodes) {
+        countryAirportCache.put(countryCode, Arrays.asList(airportCodes));
+    }
+    
+    /**
+     * Add country name aliases for better recognition
+     */
+    private void addCountryAliases() {
+        // Copy mappings for common country name variations
+        Map<String, String> aliases = new HashMap<>();
+        aliases.put("united states", "US");
+        aliases.put("usa", "US");
+        aliases.put("america", "US");
+        aliases.put("united states of america", "US");
+        
+        aliases.put("united kingdom", "GB");
+        aliases.put("uk", "GB");
+        aliases.put("britain", "GB");
+        aliases.put("england", "GB");
+        aliases.put("great britain", "GB");
+        
+        aliases.put("germany", "DE");
+        aliases.put("deutschland", "DE");
+        
+        aliases.put("france", "FR");
+        aliases.put("spain", "ES");
+        aliases.put("italy", "IT");
+        aliases.put("japan", "JP");
+        aliases.put("china", "CN");
+        aliases.put("india", "IN");
+        aliases.put("australia", "AU");
+        aliases.put("canada", "CA");
+        aliases.put("brazil", "BR");
+        aliases.put("south africa", "ZA");
+        aliases.put("russia", "RU");
+        aliases.put("south korea", "KR");
+        aliases.put("korea", "KR");
+        aliases.put("netherlands", "NL");
+        aliases.put("holland", "NL");
+        aliases.put("switzerland", "CH");
+        aliases.put("mexico", "MX");
+        aliases.put("turkey", "TR");
+        
+        // Add alias mappings
+        for (Map.Entry<String, String> entry : aliases.entrySet()) {
+            String aliasName = entry.getKey();
+            String countryCode = entry.getValue();
+            List<String> airports = countryAirportCache.get(countryCode);
+            if (airports != null) {
+                countryAirportCache.put(aliasName, airports);
+            }
+        }
+    }
+    
+    /**
+     * Get airports for a country with enhanced lookup
+     */
+    public List<String> getAirportsForCountry(String countryInput) {
+        if (countryInput == null) return Arrays.asList();
+        
+        String normalized = countryInput.toLowerCase().trim();
+        
+        // Direct lookup
+        List<String> airports = countryAirportCache.get(normalized);
+        if (airports != null) {
+            logger.debug("Found {} airports for country: {}", airports.size(), countryInput);
+            return airports;
+        }
+        
+        // Try uppercase (for country codes)
+        airports = countryAirportCache.get(countryInput.toUpperCase());
+        if (airports != null) {
+            logger.debug("Found {} airports for country code: {}", airports.size(), countryInput);
+            return airports;
+        }
+        
+        // Try fuzzy matching
+        for (Map.Entry<String, List<String>> entry : countryAirportCache.entrySet()) {
+            String key = entry.getKey();
+            if (key.length() > 2 && (key.contains(normalized) || normalized.contains(key))) {
+                logger.debug("Fuzzy match found {} airports for country: {} (matched: {})", 
+                           entry.getValue().size(), countryInput, key);
+                return entry.getValue();
+            }
+        }
+        
+        logger.debug("No airports found for country: {}", countryInput);
+        return Arrays.asList();
+    }
+    
+    /**
+     * Get major airports for a country (first 3-5 airports which are usually the major ones)
+     */
+    public List<String> getMajorAirportsForCountry(String countryInput) {
+        List<String> allAirports = getAirportsForCountry(countryInput);
+        return allAirports.stream().limit(5).collect(Collectors.toList());
+    }
+    
+    /**
+     * Enhanced route extraction with country-to-airport suggestions
+     */
+    private void extractEnhancedRouteInfoWithCountrySupport(String query, Map<String, String> params) {
+        logger.debug("Extracting route info with country support from: {}", query);
+        
+        // Try the original route patterns first
+        extractEnhancedRouteInfo(query, params);
+        
+        // If no specific airports found, try country-level matching
+        if (!params.containsKey("departure") && !params.containsKey("arrival")) {
+            String[] words = query.toLowerCase().split("\\s+");
+            String fromCountry = null;
+            String toCountry = null;
+            
+            // Look for "from [country] to [country]" patterns
+            for (int i = 0; i < words.length - 2; i++) {
+                if (words[i].equals("from")) {
+                    // Extract country name (could be multiple words)
+                    StringBuilder countryName = new StringBuilder();
+                    int j = i + 1;
+                    while (j < words.length && !words[j].equals("to")) {
+                        if (countryName.length() > 0) countryName.append(" ");
+                        countryName.append(words[j]);
+                        j++;
+                    }
+                    fromCountry = countryName.toString();
+                    
+                    // Extract destination country
+                    if (j < words.length - 1) {
+                        StringBuilder destCountry = new StringBuilder();
+                        for (int k = j + 1; k < words.length; k++) {
+                            if (destCountry.length() > 0) destCountry.append(" ");
+                            destCountry.append(words[k]);
+                        }
+                        toCountry = destCountry.toString();
+                    }
+                    break;
+                }
+            }
+            
+            // If we found country names, suggest major airports
+            if (fromCountry != null && !fromCountry.isEmpty()) {
+                List<String> depAirports = getMajorAirportsForCountry(fromCountry);
+                if (!depAirports.isEmpty()) {
+                    params.put("departure", depAirports.get(0)); // Use primary airport
+                    params.put("departure_alternatives", String.join(",", depAirports));
+                    logger.debug("Suggested departure airports for {}: {}", fromCountry, depAirports);
+                }
+            }
+            
+            if (toCountry != null && !toCountry.isEmpty()) {
+                List<String> arrAirports = getMajorAirportsForCountry(toCountry);
+                if (!arrAirports.isEmpty()) {
+                    params.put("arrival", arrAirports.get(0)); // Use primary airport
+                    params.put("arrival_alternatives", String.join(",", arrAirports));
+                    logger.debug("Suggested arrival airports for {}: {}", toCountry, arrAirports);
+                }
+            }
+        }
+        
+        logger.debug("Enhanced route extraction completed - params: {}", params);
+    }
     
     // Enhanced airline mapping with multiple name variations
     private static final Map<String, String> AIRLINE_MAPPING = new HashMap<>();
@@ -112,6 +370,143 @@ public class NaturalLanguageProcessor {
         addAirport("BOM", "Chhatrapati Shivaji International", "mumbai", "bom", "bombay");
         addAirport("DEL", "Indira Gandhi International", "delhi", "del", "new delhi");
         addAirport("BLR", "Kempegowda International", "bangalore", "blr", "bengaluru");
+        addAirport("MAA", "Chennai International", "chennai", "maa", "madras");
+        addAirport("CCU", "Netaji Subhash Chandra Bose International", "kolkata", "ccu", "calcutta");
+        addAirport("HYD", "Rajiv Gandhi International", "hyderabad", "hyd");
+        
+        // European Airports
+        addAirport("MAD", "Madrid-Barajas", "madrid", "mad", "barajas", "spain");
+        addAirport("BCN", "Barcelona-El Prat", "barcelona", "bcn", "el prat", "spain");
+        addAirport("FCO", "Leonardo da Vinci-Fiumicino", "rome", "fco", "fiumicino", "italy");
+        addAirport("MXP", "Milan Malpensa", "milan", "mxp", "malpensa", "italy");
+        addAirport("VIE", "Vienna International", "vienna", "vie", "austria");
+        addAirport("ZUR", "Zurich Airport", "zurich", "zur", "switzerland");
+        addAirport("CPH", "Copenhagen Airport", "copenhagen", "cph", "denmark");
+        addAirport("OSL", "Oslo Airport", "oslo", "osl", "norway");
+        addAirport("ARN", "Stockholm Arlanda", "stockholm", "arn", "arlanda", "sweden");
+        addAirport("HEL", "Helsinki-Vantaa", "helsinki", "hel", "vantaa", "finland");
+        addAirport("WAW", "Warsaw Chopin", "warsaw", "waw", "chopin", "poland");
+        addAirport("PRG", "Václav Havel Airport Prague", "prague", "prg", "czech republic");
+        addAirport("BUD", "Budapest Ferenc Liszt International", "budapest", "bud", "hungary");
+        addAirport("OTP", "Henri Coandă International", "bucharest", "otp", "romania");
+        addAirport("SOF", "Sofia Airport", "sofia", "sof", "bulgaria");
+        addAirport("ATH", "Athens International", "athens", "ath", "greece");
+        addAirport("IST", "Istanbul Airport", "istanbul", "ist", "turkey");
+        addAirport("SAW", "Sabiha Gökçen International", "istanbul sabiha", "saw", "turkey");
+        
+        // Middle East Airports
+        addAirport("TLV", "Ben Gurion Airport", "tel aviv", "tlv", "ben gurion", "israel");
+        addAirport("CAI", "Cairo International", "cairo", "cai", "egypt");
+        addAirport("RUH", "King Khalid International", "riyadh", "ruh", "saudi arabia");
+        addAirport("JED", "King Abdulaziz International", "jeddah", "jed", "saudi arabia");
+        addAirport("KWI", "Kuwait International", "kuwait", "kwi", "kuwait city");
+        addAirport("BAH", "Bahrain International", "bahrain", "bah", "manama");
+        addAirport("MCT", "Muscat International", "muscat", "mct", "oman");
+        addAirport("AMM", "Queen Alia International", "amman", "amm", "jordan");
+        addAirport("BEY", "Rafic Hariri International", "beirut", "bey", "lebanon");
+        addAirport("DAM", "Damascus International", "damascus", "dam", "syria");
+        addAirport("BGW", "Baghdad International", "baghdad", "bgw", "iraq");
+        addAirport("IKA", "Imam Khomeini International", "tehran", "ika", "iran");
+        
+        // African Airports (Extended)
+        addAirport("CAI", "Cairo International", "cairo", "cai", "egypt");
+        addAirport("CMN", "Mohammed V International", "casablanca", "cmn", "morocco");
+        addAirport("TUN", "Tunis-Carthage International", "tunis", "tun", "tunisia");
+        addAirport("ALG", "Houari Boumediene Airport", "algiers", "alg", "algeria");
+        addAirport("LOS", "Murtala Muhammed International", "lagos", "los", "nigeria");
+        addAirport("ABV", "Nnamdi Azikiwe International", "abuja", "abv", "nigeria");
+        addAirport("ACC", "Kotoka International", "accra", "acc", "ghana");
+        addAirport("ABJ", "Félix-Houphouët-Boigny International", "abidjan", "abj", "ivory coast");
+        addAirport("DKR", "Blaise Diagne International", "dakar", "dkr", "senegal");
+        addAirport("NBO", "Jomo Kenyatta International", "nairobi", "nbo", "kenya");
+        addAirport("ADD", "Addis Ababa Bole International", "addis ababa", "add", "ethiopia");
+        addAirport("EBB", "Entebbe International", "entebbe", "ebb", "kampala", "uganda");
+        addAirport("DAR", "Julius Nyerere International", "dar es salaam", "dar", "tanzania");
+        addAirport("LUN", "Kenneth Kaunda International", "lusaka", "lun", "zambia");
+        addAirport("HRE", "Robert Gabriel Mugabe International", "harare", "hre", "zimbabwe");
+        addAirport("GBE", "Sir Seretse Khama International", "gaborone", "gbe", "botswana");
+        addAirport("WDH", "Hosea Kutako International", "windhoek", "wdh", "namibia");
+        addAirport("MPM", "Maputo International", "maputo", "mpm", "mozambique");
+        
+        // Asian Airports (Extended)
+        addAirport("PEK", "Beijing Capital International", "beijing", "pek", "capital", "china");
+        addAirport("PKX", "Beijing Daxing International", "beijing daxing", "pkx", "daxing", "china");
+        addAirport("PVG", "Shanghai Pudong International", "shanghai", "pvg", "pudong", "china");
+        addAirport("SHA", "Shanghai Hongqiao International", "shanghai hongqiao", "sha", "hongqiao", "china");
+        addAirport("CAN", "Guangzhou Tianhe International", "guangzhou", "can", "tianhe", "china");
+        addAirport("SZX", "Shenzhen Bao'an International", "shenzhen", "szx", "baoan", "china");
+        addAirport("CGK", "Soekarno-Hatta International", "jakarta", "cgk", "soekarno hatta", "indonesia");
+        addAirport("DPS", "Ngurah Rai International", "bali", "dps", "denpasar", "ngurah rai", "indonesia");
+        addAirport("SUB", "Juanda International", "surabaya", "sub", "juanda", "indonesia");
+        addAirport("KUL", "Kuala Lumpur International", "kuala lumpur", "kul", "malaysia");
+        addAirport("BKK", "Suvarnabhumi Airport", "bangkok", "bkk", "suvarnabhumi", "thailand");
+        addAirport("DMK", "Don Mueang International", "bangkok don mueang", "dmk", "don mueang", "thailand");
+        addAirport("HKT", "Phuket International", "phuket", "hkt", "thailand");
+        addAirport("SGN", "Tan Son Nhat International", "ho chi minh", "sgn", "saigon", "vietnam");
+        addAirport("HAN", "Noi Bai International", "hanoi", "han", "noi bai", "vietnam");
+        addAirport("MNL", "Ninoy Aquino International", "manila", "mnl", "ninoy aquino", "philippines");
+        addAirport("CEB", "Mactan-Cebu International", "cebu", "ceb", "mactan", "philippines");
+        addAirport("RGN", "Yangon International", "yangon", "rgn", "rangoon", "myanmar");
+        addAirport("PNH", "Phnom Penh International", "phnom penh", "pnh", "cambodia");
+        addAirport("VTE", "Wattay International", "vientiane", "vte", "wattay", "laos");
+        addAirport("BWN", "Brunei International", "bandar seri begawan", "bwn", "brunei");
+        addAirport("CMB", "Bandaranaike International", "colombo", "cmb", "bandaranaike", "sri lanka");
+        addAirport("MLE", "Malé International", "male", "mle", "maldives");
+        addAirport("KTM", "Tribhuvan International", "kathmandu", "ktm", "tribhuvan", "nepal");
+        addAirport("DAC", "Hazrat Shahjalal International", "dhaka", "dac", "hazrat shahjalal", "bangladesh");
+        addAirport("CXB", "Cox's Bazar Airport", "coxs bazar", "cxb", "bangladesh");
+        
+        // Latin American Airports
+        addAirport("GRU", "São Paulo/Guarulhos International", "sao paulo", "gru", "guarulhos", "brazil");
+        addAirport("GIG", "Rio de Janeiro/Galeão International", "rio de janeiro", "gig", "galeao", "brazil");
+        addAirport("BSB", "Brasília International", "brasilia", "bsb", "brazil");
+        addAirport("FOR", "Fortaleza International", "fortaleza", "for", "brazil");
+        addAirport("SSA", "Salvador International", "salvador", "ssa", "brazil");
+        addAirport("REC", "Recife International", "recife", "rec", "brazil");
+        addAirport("EZE", "Ezeiza International", "buenos aires", "eze", "ezeiza", "argentina");
+        addAirport("AEP", "Jorge Newbery Airfield", "buenos aires jorge newbery", "aep", "argentina");
+        addAirport("SCL", "Santiago International", "santiago", "scl", "chile");
+        addAirport("LIM", "Jorge Chávez International", "lima", "lim", "jorge chavez", "peru");
+        addAirport("BOG", "El Dorado International", "bogota", "bog", "el dorado", "colombia");
+        addAirport("MDE", "José María Córdova International", "medellin", "mde", "jose maria cordova", "colombia");
+        addAirport("UIO", "Mariscal Sucre International", "quito", "uio", "mariscal sucre", "ecuador");
+        addAirport("GYE", "José Joaquín de Olmedo International", "guayaquil", "gye", "ecuador");
+        addAirport("CCS", "Simón Bolívar International", "caracas", "ccs", "simon bolivar", "venezuela");
+        addAirport("ASU", "Silvio Pettirossi International", "asuncion", "asu", "silvio pettirossi", "paraguay");
+        addAirport("MVD", "Carrasco International", "montevideo", "mvd", "carrasco", "uruguay");
+        addAirport("LPB", "El Alto International", "la paz", "lpb", "el alto", "bolivia");
+        addAirport("VVI", "Viru Viru International", "santa cruz", "vvi", "viru viru", "bolivia");
+        addAirport("GEO", "Cheddi Jagan International", "georgetown", "geo", "cheddi jagan", "guyana");
+        addAirport("PBM", "Johan Adolf Pengel International", "paramaribo", "pbm", "johan adolf pengel", "suriname");
+        
+        // Caribbean Airports
+        addAirport("HAV", "José Martí International", "havana", "hav", "jose marti", "cuba");
+        addAirport("SDQ", "Las Américas International", "santo domingo", "sdq", "las americas", "dominican republic");
+        addAirport("PUJ", "Punta Cana International", "punta cana", "puj", "dominican republic");
+        addAirport("SJU", "Luis Muñoz Marín International", "san juan", "sju", "luis munoz marin", "puerto rico");
+        addAirport("NAS", "Lynden Pindling International", "nassau", "nas", "lynden pindling", "bahamas");
+        addAirport("KIN", "Norman Manley International", "kingston", "kin", "norman manley", "jamaica");
+        addAirport("MBJ", "Sangster International", "montego bay", "mbj", "sangster", "jamaica");
+        addAirport("BGI", "Grantley Adams International", "bridgetown", "bgi", "grantley adams", "barbados");
+        addAirport("POS", "Piarco International", "port of spain", "pos", "piarco", "trinidad");
+        addAirport("CUR", "Hato International", "curacao", "cur", "hato", "willemstad");
+        addAirport("AUA", "Queen Beatrix International", "aruba", "aua", "queen beatrix", "oranjestad");
+        
+        // Pacific Islands
+        addAirport("HNL", "Daniel K. Inouye International", "honolulu", "hnl", "daniel inouye", "hawaii");
+        addAirport("OGG", "Kahului Airport", "maui", "ogg", "kahului", "hawaii");
+        addAirport("KOA", "Ellison Onizuka Kona International", "kona", "koa", "big island", "hawaii");
+        addAirport("LIH", "Lihue Airport", "kauai", "lih", "lihue", "hawaii");
+        addAirport("GUM", "Antonio B. Won Pat International", "guam", "gum", "antonio won pat");
+        addAirport("NOU", "La Tontouta International", "noumea", "nou", "la tontouta", "new caledonia");
+        addAirport("PPT", "Faa'a International", "tahiti", "ppt", "faaa", "papeete");
+        addAirport("NAN", "Nadi International", "nadi", "nan", "fiji");
+        addAirport("SUV", "Nausori Airport", "suva", "suv", "nausori", "fiji");
+        addAirport("VLI", "Bauerfield International", "port vila", "vli", "bauerfield", "vanuatu");
+        addAirport("HIR", "Honiara International", "honiara", "hir", "solomon islands");
+        addAirport("POM", "Jacksons International", "port moresby", "pom", "jacksons", "papua new guinea");
+        addAirport("APW", "Faleolo International", "apia", "apw", "faleolo", "samoa");
+        addAirport("TBU", "Fuaʻamotu International", "nuku'alofa", "tbu", "fuaamotu", "tonga");
     }
     
     // Inner class for airport information
@@ -172,7 +567,7 @@ public class NaturalLanguageProcessor {
                 extractEnhancedArrivalInfo(lowerQuery, params);
                 break;
             case "route":
-                extractEnhancedRouteInfo(lowerQuery, params);
+                extractEnhancedRouteInfoWithCountrySupport(lowerQuery, params);
                 break;
             case "flight_number":
                 extractEnhancedFlightNumberInfo(query, params);
@@ -208,7 +603,7 @@ public class NaturalLanguageProcessor {
     }
     
     /**
-     * Enhanced query type determination with better accuracy
+     * Enhanced query type determination with country support
      */
     private String determineQueryType(String query) {
         // Flight number has highest priority
@@ -219,6 +614,11 @@ public class NaturalLanguageProcessor {
         // Route patterns with multiple variations
         if (containsRoutePatterns(query)) {
             return "route";
+        }
+        
+        // Check for country-level queries
+        if (containsCountryPatterns(query)) {
+            return "route"; // Treat country queries as route queries for now
         }
         
         // Airline patterns
@@ -242,6 +642,26 @@ public class NaturalLanguageProcessor {
         }
         
         return "active"; // Default
+    }
+    
+    /**
+     * Check for country-level patterns in queries
+     */
+    private boolean containsCountryPatterns(String query) {
+        String[] countryKeywords = {"country", "nation", "flights to", "flights from", "from", "to"};
+        
+        for (String keyword : countryKeywords) {
+            if (query.contains(keyword)) {
+                // Check if any of our known countries are mentioned
+                for (String country : countryAirportCache.keySet()) {
+                    if (query.contains(country.toLowerCase())) {
+                        return true;
+                    }
+                }
+            }
+        }
+        
+        return false;
     }
     
     /**
@@ -556,5 +976,53 @@ public class NaturalLanguageProcessor {
         }
         
         return String.format("%.2f", Math.min(score, 1.0));
+    }
+    
+    /**
+     * Get supported countries for help/suggestions
+     */
+    public List<String> getSupportedCountries() {
+        return countryAirportCache.keySet().stream()
+                .filter(key -> key.length() == 2) // Only return country codes
+                .sorted()
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Get airport suggestions for a country
+     */
+    public String getAirportSuggestionsForCountry(String countryInput) {
+        List<String> airports = getAirportsForCountry(countryInput);
+        if (airports.isEmpty()) {
+            return "No airports found for " + countryInput;
+        }
+        
+        return "Major airports in " + countryInput + ": " + String.join(", ", airports);
+    }
+    
+    /**
+     * Enhanced parameter extraction that includes country-level suggestions
+     */
+    public Map<String, String> extractFlightParametersWithSuggestions(String query) {
+        Map<String, String> params = extractFlightParameters(query);
+        
+        // Add country suggestions if specific airports weren't found
+        if (!params.containsKey("departure") && !params.containsKey("arrival")) {
+            String lowerQuery = query.toLowerCase();
+            
+            // Look for country mentions and suggest airports
+            for (String country : countryAirportCache.keySet()) {
+                if (lowerQuery.contains(country.toLowerCase())) {
+                    List<String> airports = countryAirportCache.get(country);
+                    if (!airports.isEmpty()) {
+                        params.put("suggested_country", country);
+                        params.put("suggested_airports", String.join(",", airports.subList(0, Math.min(3, airports.size()))));
+                        break;
+                    }
+                }
+            }
+        }
+        
+        return params;
     }
 }
