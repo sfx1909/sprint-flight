@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprint Flight API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        
+        .api-section {
+            margin-bottom: 30px;
+        }
+        
+        .endpoint {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-left: 4px solid #007bff;
+            margin-bottom: 15px;
+        }
+        
+        .endpoint h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        
+        .endpoint-url {
+            font-family: monospace;
+            background-color: #e9ecef;
+            padding: 5px 10px;
+            border-radius: 4px;
+            display: inline-block;
+            margin: 5px 0;
+        }
+        
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+        .input-group {
+            margin: 10px 0;
+        }
+        
+        input[type="text"], input[type="number"] {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 5px;
+        }
+        
+        .result {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .loading {
+            color: #007bff;
+            font-style: italic;
+        }
+        
+        .error {
+            color: #dc3545;
+        }
+        
+        .success {
+            color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛩️ Sprint Flight API Test Interface</h1>
+        <p style="text-align: center; color: #666;">
+            Test your Spring Boot Flight API endpoints. Make sure your application is running on localhost:8080
+        </p>
+        <div style="text-align: center; margin: 20px 0;">
+            <a href="/chat.html" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 24px; text-decoration: none; border-radius: 25px; font-weight: 500; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); transition: transform 0.2s ease;">
+                💬 Try the Chat Interface
+            </a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="api-section">
+            <h2>API Endpoints</h2>
+            
+            <div class="endpoint">
+                <h3>Welcome / API Info</h3>
+                <div class="endpoint-url">GET /api/flights/</div>
+                <button onclick="testEndpoint('/api/flights/', 'welcome-result')">Test Welcome</button>
+                <div id="welcome-result" class="result" style="display: none;"></div>
+            </div>
+            
+            <div class="endpoint">
+                <h3>Get Flights by Airline</h3>
+                <div class="endpoint-url">GET /api/flights/airline/{airlineIata}?limit={limit}</div>
+                <div class="input-group">
+                    <input type="text" id="airline-code" placeholder="Airline IATA (e.g., AA, DL, UA)" value="AA">
+                    <input type="number" id="airline-limit" placeholder="Limit" value="5" min="1" max="50">
+                    <button onclick="testAirlineEndpoint()">Get Flights by Airline</button>
+                </div>
+                <div id="airline-result" class="result" style="display: none;"></div>
+            </div>
+            
+            <div class="endpoint">
+                <h3>Get Flights by Departure Airport</h3>
+                <div class="endpoint-url">GET /api/flights/departure/{departureIata}?limit={limit}</div>
+                <div class="input-group">
+                    <input type="text" id="departure-code" placeholder="Departure IATA (e.g., JFK, LAX, ORD)" value="JFK">
+                    <input type="number" id="departure-limit" placeholder="Limit" value="5" min="1" max="50">
+                    <button onclick="testDepartureEndpoint()">Get Flights by Departure</button>
+                </div>
+                <div id="departure-result" class="result" style="display: none;"></div>
+            </div>
+            
+            <div class="endpoint">
+                <h3>Get Flights by Arrival Airport</h3>
+                <div class="endpoint-url">GET /api/flights/arrival/{arrivalIata}?limit={limit}</div>
+                <div class="input-group">
+                    <input type="text" id="arrival-code" placeholder="Arrival IATA (e.g., LAX, JFK, ORD)" value="LAX">
+                    <input type="number" id="arrival-limit" placeholder="Limit" value="5" min="1" max="50">
+                    <button onclick="testArrivalEndpoint()">Get Flights by Arrival</button>
+                </div>
+                <div id="arrival-result" class="result" style="display: none;"></div>
+            </div>
+            
+            <div class="endpoint">
+                <h3>Get Flights by Route</h3>
+                <div class="endpoint-url">GET /api/flights/route/{departureIata}/{arrivalIata}?limit={limit}</div>
+                <div class="input-group">
+                    <input type="text" id="route-departure" placeholder="Departure IATA" value="JFK">
+                    <input type="text" id="route-arrival" placeholder="Arrival IATA" value="LAX">
+                    <input type="number" id="route-limit" placeholder="Limit" value="5" min="1" max="50">
+                    <button onclick="testRouteEndpoint()">Get Flights by Route</button>
+                </div>
+                <div id="route-result" class="result" style="display: none;"></div>
+            </div>
+            
+            <div class="endpoint">
+                <h3>Get Flight by Number</h3>
+                <div class="endpoint-url">GET /api/flights/number/{flightIata}?limit={limit}</div>
+                <div class="input-group">
+                    <input type="text" id="flight-number" placeholder="Flight Number (e.g., AA100, DL123)" value="AA100">
+                    <input type="number" id="flight-limit" placeholder="Limit" value="3" min="1" max="20">
+                    <button onclick="testFlightNumberEndpoint()">Get Flight by Number</button>
+                </div>
+                <div id="flight-number-result" class="result" style="display: none;"></div>
+            </div>
+            
+            <div class="endpoint">
+                <h3>Get Active Flights</h3>
+                <div class="endpoint-url">GET /api/flights/active?limit={limit}</div>
+                <div class="input-group">
+                    <input type="number" id="active-limit" placeholder="Limit" value="10" min="1" max="50">
+                    <button onclick="testActiveFlightsEndpoint()">Get Active Flights</button>
+                </div>
+                <div id="active-result" class="result" style="display: none;"></div>
+            </div>
+            
+            <div class="endpoint">
+                <h3>Health Check</h3>
+                <div class="endpoint-url">GET /api/flights/health</div>
+                <button onclick="testEndpoint('/api/flights/health', 'health-result')">Check Health</button>
+                <div id="health-result" class="result" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>⚠️ Setup Instructions</h2>
+        <ol>
+            <li>Sign up for a free API key at <a href="https://aviationstack.com/" target="_blank">AviationStack</a></li>
+            <li>Update your <code>application.properties</code> file with your API key:
+                <div style="background-color: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace;">
+                    flight.api.key=YOUR_ACTUAL_API_KEY_HERE
+                </div>
+            </li>
+            <li>Start your Spring Boot application</li>
+            <li>Use this page to test the API endpoints</li>
+        </ol>
+        <p><strong>Note:</strong> The free tier of AviationStack has rate limits. Use reasonable limit values to avoid exceeding them.</p>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8080';
+        
+        function testEndpoint(endpoint, resultId) {
+            const resultDiv = document.getElementById(resultId);
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result loading';
+            resultDiv.textContent = 'Loading...';
+            
+            fetch(API_BASE_URL + endpoint)
+                .then(response => response.json())
+                .then(data => {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = 'Error: ' + error.message + '\n\nMake sure your Spring Boot application is running on localhost:8080 and you have configured your API key.';
+                });
+        }
+        
+        function testAirlineEndpoint() {
+            const airline = document.getElementById('airline-code').value.trim();
+            const limit = document.getElementById('airline-limit').value;
+            if (!airline) {
+                alert('Please enter an airline IATA code');
+                return;
+            }
+            testEndpoint(`/api/flights/airline/${airline}?limit=${limit}`, 'airline-result');
+        }
+        
+        function testDepartureEndpoint() {
+            const departure = document.getElementById('departure-code').value.trim();
+            const limit = document.getElementById('departure-limit').value;
+            if (!departure) {
+                alert('Please enter a departure airport IATA code');
+                return;
+            }
+            testEndpoint(`/api/flights/departure/${departure}?limit=${limit}`, 'departure-result');
+        }
+        
+        function testArrivalEndpoint() {
+            const arrival = document.getElementById('arrival-code').value.trim();
+            const limit = document.getElementById('arrival-limit').value;
+            if (!arrival) {
+                alert('Please enter an arrival airport IATA code');
+                return;
+            }
+            testEndpoint(`/api/flights/arrival/${arrival}?limit=${limit}`, 'arrival-result');
+        }
+        
+        function testRouteEndpoint() {
+            const departure = document.getElementById('route-departure').value.trim();
+            const arrival = document.getElementById('route-arrival').value.trim();
+            const limit = document.getElementById('route-limit').value;
+            if (!departure || !arrival) {
+                alert('Please enter both departure and arrival airport IATA codes');
+                return;
+            }
+            testEndpoint(`/api/flights/route/${departure}/${arrival}?limit=${limit}`, 'route-result');
+        }
+        
+        function testFlightNumberEndpoint() {
+            const flightNumber = document.getElementById('flight-number').value.trim();
+            const limit = document.getElementById('flight-limit').value;
+            if (!flightNumber) {
+                alert('Please enter a flight number');
+                return;
+            }
+            testEndpoint(`/api/flights/number/${flightNumber}?limit=${limit}`, 'flight-number-result');
+        }
+        
+        function testActiveFlightsEndpoint() {
+            const limit = document.getElementById('active-limit').value;
+            testEndpoint(`/api/flights/active?limit=${limit}`, 'active-result');
+        }
+    </script>
+</body>
+</html>

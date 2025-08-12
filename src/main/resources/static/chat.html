@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Chat Assistant - Sprint Flight</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 50%, #6366f1 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 1200px;
+            height: 90vh;
+            max-height: 900px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 50%, #6366f1 100%);
+            color: white;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .chat-header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .chat-header p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            background: #f8fafc;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 #f1f5f9;
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .message {
+            margin-bottom: 24px;
+            max-width: 85%;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        .message.user {
+            margin-left: auto;
+        }
+
+        .message.assistant {
+            margin-right: auto;
+        }
+
+        .message-content {
+            padding: 16px 20px;
+            border-radius: 16px;
+            word-wrap: break-word;
+            position: relative;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.15);
+        }
+
+        .message.assistant .message-content {
+            background: white;
+            color: #1e293b;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .message-time {
+            font-size: 11px;
+            opacity: 0.6;
+            margin-top: 5px;
+            text-align: right;
+        }
+
+        .message.assistant .message-time {
+            text-align: left;
+        }
+
+        .flight-results {
+            margin-top: 15px;
+        }
+
+        .flight-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .flight-card:hover {
+            background: #f1f5f9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .flight-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .flight-number {
+            font-weight: 600;
+            font-size: 16px;
+            color: #3b82f6;
+        }
+
+        .flight-status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-scheduled {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-delayed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .flight-route {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        .airport {
+            text-align: center;
+            flex: 1;
+        }
+
+        .airport-code {
+            font-weight: 600;
+            font-size: 18px;
+            color: #333;
+        }
+
+        .airport-name {
+            font-size: 12px;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .route-arrow {
+            margin: 0 20px;
+            color: #3b82f6;
+            font-size: 20px;
+        }
+
+        .flight-times {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .airline-info {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #e2e8f0;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .chat-input-container {
+            padding: 24px;
+            background: white;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 24px;
+            padding: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .input-group:focus-within {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .chat-input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 14px 20px;
+            font-size: 16px;
+            outline: none;
+            border-radius: 20px;
+        }
+
+        .send-button {
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            margin-right: 4px;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+        }
+
+        .send-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .send-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .suggestions {
+            padding: 12px 24px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .suggestion-chip {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .suggestion-chip:hover {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+            transform: translateY(-1px);
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            max-width: 80px;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #3b82f6;
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typing {
+            0%, 80%, 100% { 
+                transform: scale(0);
+                opacity: 0.5;
+            }
+            40% { 
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .welcome-message {
+            text-align: center;
+            padding: 50px 24px;
+            color: #64748b;
+        }
+
+        .welcome-message h2 {
+            color: #1e293b;
+            margin-bottom: 12px;
+            font-size: 24px;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .chat-container {
+                height: 100vh;
+                border-radius: 0;
+                max-height: none;
+            }
+
+            .message {
+                max-width: 90%;
+            }
+
+            .flight-route {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .route-arrow {
+                transform: rotate(90deg);
+                margin: 5px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>✈️ Flight Chat Assistant</h1>
+            <p>Ask me anything about flights in natural language</p>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="welcome-message">
+                <h2>👋 Welcome!</h2>
+                <p>I'm your global flight assistant. Try asking me things like:</p>
+                <div class="suggestions" style="justify-content: center; margin-top: 15px;">
+                    <button class="suggestion-chip" onclick="sendSuggestion('Show me flights from London to Tokyo')">🌍 LHR to NRT</button>
+                    <button class="suggestion-chip" onclick="sendSuggestion('Emirates flights from Dubai')">✈️ Emirates Dubai</button>
+                    <button class="suggestion-chip" onclick="sendSuggestion('What flights are leaving from Frankfurt?')">🛫 Frankfurt departures</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="suggestions" id="suggestions">
+            <button class="suggestion-chip" onclick="sendSuggestion('Show me active flights')">🌍 Active flights</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('Flights from Paris to New York')">� Paris to NYC</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('Singapore Airlines flights')">🌏 Singapore Airlines</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('British Airways from London')">🇬🇧 BA London</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('Flights to Tokyo')">🗾 To Tokyo</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('Emirates flights')">�️ Emirates</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('Help')">❓ Help</button>
+        </div>
+
+        <div class="chat-input-container">
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    class="chat-input" 
+                    id="messageInput" 
+                    placeholder="Ask me about flights... (e.g., 'Show me flights from JFK to LAX')"
+                    autocomplete="off"
+                >
+                <button class="send-button" id="sendButton" onclick="sendMessage()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8080';
+        let isTyping = false;
+
+        // Initialize chat
+        document.addEventListener('DOMContentLoaded', function() {
+            const input = document.getElementById('messageInput');
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+        });
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message || isTyping) return;
+            
+            // Add user message
+            addMessage(message, 'user');
+            input.value = '';
+            
+            // Show typing indicator
+            showTypingIndicator();
+            
+            // Send to API
+            fetch(`${API_BASE_URL}/api/chat/message`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: message })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideTypingIndicator();
+                addMessage(data.message, 'assistant', data.flights, data.type);
+            })
+            .catch(error => {
+                hideTypingIndicator();
+                addMessage('Sorry, I encountered an error. Please try again.', 'assistant', null, 'error');
+                console.error('Error:', error);
+            });
+        }
+
+        function sendSuggestion(message) {
+            document.getElementById('messageInput').value = message;
+            sendMessage();
+        }
+
+        function addMessage(content, sender, flights = null, type = 'info') {
+            const messagesContainer = document.getElementById('chatMessages');
+            
+            // Remove welcome message if it exists
+            const welcomeMessage = messagesContainer.querySelector('.welcome-message');
+            if (welcomeMessage) {
+                welcomeMessage.remove();
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            let flightHTML = '';
+            if (flights && flights.length > 0) {
+                flightHTML = '<div class="flight-results">' + flights.map(flight => createFlightCard(flight)).join('') + '</div>';
+            }
+            
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    ${formatMessage(content)}
+                    ${flightHTML}
+                </div>
+                <div class="message-time">${timestamp}</div>
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function formatMessage(message) {
+            // Convert markdown-style formatting to HTML
+            return message
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\n/g, '<br>')
+                .replace(/•/g, '•');
+        }
+
+        function createFlightCard(flight) {
+            const departure = flight.departure || {};
+            const arrival = flight.arrival || {};
+            const airline = flight.airline || {};
+            const flightInfo = flight.flight || {};
+            
+            const status = flight.flight_status || 'unknown';
+            const statusClass = `status-${status}`;
+            
+            const delay = departure.delay ? `<span style="color: #dc3545;">+${departure.delay}min</span>` : '';
+            
+            return `
+                <div class="flight-card">
+                    <div class="flight-header">
+                        <div class="flight-number">${flightInfo.iata || 'N/A'} - ${airline.name || 'Unknown Airline'}</div>
+                        <div class="flight-status ${statusClass}">${status}</div>
+                    </div>
+                    <div class="flight-route">
+                        <div class="airport">
+                            <div class="airport-code">${departure.iata || 'N/A'}</div>
+                            <div class="airport-name">${departure.airport || 'Unknown'}</div>
+                        </div>
+                        <div class="route-arrow">→</div>
+                        <div class="airport">
+                            <div class="airport-code">${arrival.iata || 'N/A'}</div>
+                            <div class="airport-name">${arrival.airport || 'Unknown'}</div>
+                        </div>
+                    </div>
+                    <div class="flight-times">
+                        <div>
+                            <strong>Departure:</strong> 
+                            ${departure.scheduled ? new Date(departure.scheduled).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                            ${delay}
+                        </div>
+                        <div>
+                            <strong>Arrival:</strong> 
+                            ${arrival.scheduled ? new Date(arrival.scheduled).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                        </div>
+                    </div>
+                    ${departure.gate ? `<div class="airline-info">Gate: ${departure.gate} | Terminal: ${departure.terminal || 'N/A'}</div>` : ''}
+                </div>
+            `;
+        }
+
+        function showTypingIndicator() {
+            isTyping = true;
+            document.getElementById('sendButton').disabled = true;
+            
+            const messagesContainer = document.getElementById('chatMessages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message assistant';
+            typingDiv.id = 'typing-indicator';
+            typingDiv.innerHTML = `
+                <div class="typing-indicator">
+                    <div class="typing-dots">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(typingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            isTyping = false;
+            document.getElementById('sendButton').disabled = false;
+            
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        // Auto-focus input
+        document.getElementById('messageInput').focus();
+    </script>
+</body>
+</html>
