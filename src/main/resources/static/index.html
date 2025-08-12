@@ -3,365 +3,627 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sprint Flight API Test</title>
+    <title>Sprint Flight - Chat Assistant</title>
+    <link rel="stylesheet" href="shadcn-style.css">
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 80vw;
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
+            background-color: hsl(var(--background));
+            box-shadow: 0 0 0 1px hsl(var(--border));
         }
-        
-        .container {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        
-        h1 {
-            color: #333;
+
+        .chat-header {
+            background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.8) 100%);
+            color: hsl(var(--primary-foreground));
+            padding: 1.5rem;
             text-align: center;
+            box-shadow: 0 2px 4px -1px rgb(0 0 0 / 0.1);
+            border-bottom: 1px solid hsl(var(--border));
         }
-        
-        .api-section {
-            margin-bottom: 30px;
+
+        .chat-header h1 {
+            font-size: 1.875rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
         }
-        
-        .endpoint {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-left: 4px solid #007bff;
-            margin-bottom: 15px;
+
+        .chat-header p {
+            opacity: 0.9;
+            font-size: 1rem;
         }
-        
-        .endpoint h3 {
-            margin-top: 0;
-            color: #007bff;
-        }
-        
-        .endpoint-url {
-            font-family: monospace;
-            background-color: #e9ecef;
-            padding: 5px 10px;
-            border-radius: 4px;
-            display: inline-block;
-            margin: 5px 0;
-        }
-        
-        button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin: 5px;
-        }
-        
-        button:hover {
-            background-color: #0056b3;
-        }
-        
-        .input-group {
-            margin: 10px 0;
-        }
-        
-        input[type="text"], input[type="number"] {
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            margin: 5px;
-        }
-        
-        .result {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
-            padding: 15px;
-            margin-top: 15px;
-            max-height: 400px;
+
+        .chat-messages {
+            flex: 1;
             overflow-y: auto;
-            white-space: pre-wrap;
-            font-family: monospace;
-            font-size: 12px;
+            padding: 1.5rem;
+            background-color: hsl(var(--muted) / 0.3);
         }
-        
-        .loading {
-            color: #007bff;
-            font-style: italic;
+
+        .message {
+            margin-bottom: 1.5rem;
+            max-width: 85%;
+            animation: slideUp 0.3s ease-out;
+            display: flex;
+            flex-direction: column;
         }
-        
-        .error {
-            color: #dc3545;
+
+        .message.user {
+            margin-left: auto;
+            align-items: flex-end;
         }
-        
-        .success {
-            color: #28a745;
+
+        .message.assistant {
+            margin-right: auto;
+            align-items: flex-start;
+        }
+
+        .message-content {
+            padding: 1rem 1.25rem;
+            border-radius: var(--radius);
+            word-wrap: break-word;
+            position: relative;
+            font-size: 0.9375rem;
+            line-height: 1.5;
+            width: fit-content;
+            max-width: 100%;
+            min-width: 2rem;
+        }
+
+        .message.user .message-content {
+            background-color: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            box-shadow: 0 2px 4px -1px hsl(var(--primary) / 0.3);
+        }
+
+        .message.assistant .message-content {
+            background-color: hsl(var(--card));
+            color: hsl(var(--card-foreground));
+            border: 1px solid hsl(var(--border));
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+        }
+
+        .message-time {
+            font-size: 0.6875rem;
+            color: hsl(var(--muted-foreground));
+            margin-top: 0.5rem;
+            width: fit-content;
+        }
+
+        .message.user .message-time {
+            text-align: right;
+            align-self: flex-end;
+        }
+
+        .message.assistant .message-time {
+            text-align: left;
+            align-self: flex-start;
+        }
+
+        .flight-results {
+            margin-top: 1rem;
+        }
+
+        .flight-card {
+            background-color: hsl(var(--muted) / 0.5);
+            border: 1px solid hsl(var(--border));
+            border-radius: var(--radius);
+            padding: 1.125rem;
+            margin-bottom: 0.75rem;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .flight-card:hover {
+            background-color: hsl(var(--muted) / 0.7);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        .flight-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .flight-number {
+            font-weight: 600;
+            font-size: 1rem;
+            color: hsl(var(--primary));
+        }
+
+        .flight-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .status-active {
+            background-color: hsl(142 71% 45% / 0.1);
+            color: hsl(142 71% 45%);
+            border: 1px solid hsl(142 71% 45% / 0.2);
+        }
+
+        .status-scheduled {
+            background-color: hsl(var(--primary) / 0.1);
+            color: hsl(var(--primary));
+            border: 1px solid hsl(var(--primary) / 0.2);
+        }
+
+        .status-delayed {
+            background-color: hsl(var(--destructive) / 0.1);
+            color: hsl(var(--destructive));
+            border: 1px solid hsl(var(--destructive) / 0.2);
+        }
+
+        .flight-route {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 0.75rem 0;
+        }
+
+        .airport {
+            text-align: center;
+            flex: 1;
+        }
+
+        .airport-code {
+            font-weight: 600;
+            font-size: 1.125rem;
+            color: hsl(var(--foreground));
+        }
+
+        .airport-name {
+            font-size: 0.75rem;
+            color: hsl(var(--muted-foreground));
+            margin-top: 0.125rem;
+        }
+
+        .route-arrow {
+            margin: 0 1.25rem;
+            color: hsl(var(--primary));
+            font-size: 1.25rem;
+        }
+
+        .flight-times {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: hsl(var(--muted-foreground));
+            margin-top: 0.5rem;
+        }
+
+        .airline-info {
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid hsl(var(--border));
+            font-size: 0.75rem;
+            color: hsl(var(--muted-foreground));
+        }
+
+        .chat-input-container {
+            padding: 1.5rem;
+            background-color: hsl(var(--background));
+            border-top: 1px solid hsl(var(--border));
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            background-color: hsl(var(--muted) / 0.3);
+            border: 1px solid hsl(var(--border));
+            border-radius: calc(var(--radius) * 3);
+            padding: 0.375rem;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .input-group:focus-within {
+            border-color: hsl(var(--ring));
+            box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
+        }
+
+        .chat-input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 0.875rem 1.25rem;
+            font-size: 1rem;
+            outline: none;
+            border-radius: calc(var(--radius) * 2.5);
+            color: hsl(var(--foreground));
+        }
+
+        .chat-input::placeholder {
+            color: hsl(var(--muted-foreground));
+        }
+
+        .send-button {
+            background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.9) 100%);
+            color: hsl(var(--primary-foreground));
+            border: none;
+            border-radius: 50%;
+            width: 3rem;
+            height: 3rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease-in-out;
+            margin-right: 0.25rem;
+            box-shadow: 0 2px 4px hsl(var(--primary) / 0.2);
+        }
+
+        .send-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px hsl(var(--primary) / 0.3);
+        }
+
+        .send-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .suggestions {
+            padding: 1rem 1.5rem 1rem;
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            max-height: 7.5rem;
+            overflow-y: auto;
+        }
+
+        .suggestion-chip {
+            background-color: hsl(var(--muted));
+            border: 1px solid hsl(var(--border));
+            border-radius: calc(var(--radius) * 2.5);
+            padding: 0.625rem 1.125rem;
+            font-size: 0.8125rem;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            white-space: nowrap;
+            color: hsl(var(--foreground));
+            font-weight: 500;
+        }
+
+        .suggestion-chip:hover {
+            background-color: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            border-color: hsl(var(--primary));
+            transform: translateY(-1px);
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            padding: 0.9375rem 1.25rem;
+            margin-bottom: 1.25rem;
+            max-width: 5rem;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .typing-dot {
+            width: 0.5rem;
+            height: 0.5rem;
+            background-color: hsl(var(--primary));
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typing {
+            0%, 80%, 100% { 
+                transform: scale(0);
+                opacity: 0.5;
+            }
+            40% { 
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .welcome-message {
+            text-align: center;
+            padding: 3.125rem 1.5rem;
+            color: hsl(var(--muted-foreground));
+        }
+
+        .welcome-message h2 {
+            color: hsl(var(--foreground));
+            margin-bottom: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .chat-container {
+                width: 100vw;
+                height: 100vh;
+                border-radius: 0;
+                box-shadow: none;
+            }
+
+            .message {
+                max-width: 95%;
+            }
+
+            .message-content {
+                max-width: calc(100vw - 4rem);
+            }
+
+            .flight-route {
+                flex-direction: column;
+                gap: 0.625rem;
+            }
+
+            .route-arrow {
+                transform: rotate(90deg);
+                margin: 0.3125rem 0;
+            }
+
+            .suggestions {
+                padding: 0.75rem 1rem 0.75rem;
+            }
+
+            .suggestion-chip {
+                padding: 0.5rem 0.875rem;
+                font-size: 0.75rem;
+            }
+        }
+
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .chat-container {
+                width: 85vw;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🛩️ Sprint Flight API Test Interface</h1>
-        <p style="text-align: center; color: #666;">
-            Test your Spring Boot Flight API endpoints with aviation data integration and AI-powered natural language queries
-        </p>
-    </div>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>✈️ Sprint Flight Assistant</h1>
+            <p>Your intelligent flight search companion</p>
+        </div>
 
-    <div class="container">
-        <h2>🤖 AI Flight Assistant (NEW!)</h2>
-        <div class="endpoint">
-            <h3>Natural Language Flight Queries</h3>
-            <div class="endpoint-url">POST /api/conversation/query</div>
+        <div class="chat-messages scrollbar-thin" id="chatMessages">
+            <div class="welcome-message">
+                <h2>👋 Welcome to Sprint Flight!</h2>
+                <p>I'm your AI flight assistant. Ask me anything about flights in natural language:</p>
+                <div class="suggestions" style="justify-content: center; margin-top: 1rem;">
+                    <button class="suggestion-chip" onclick="sendSuggestion('Show me flights from London to Tokyo')">🌍 LHR to NRT</button>
+                    <button class="suggestion-chip" onclick="sendSuggestion('Emirates flights from Dubai')">✈️ Emirates Dubai</button>
+                    <button class="suggestion-chip" onclick="sendSuggestion('What flights are leaving from Frankfurt?')">🛫 Frankfurt departures</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="suggestions" id="suggestions">
+            <button class="suggestion-chip" onclick="sendSuggestion('Show me active flights')">🌍 Active flights</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('Flights from Paris to New York')">🗽 Paris to NYC</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('Singapore Airlines flights')">🌏 Singapore Airlines</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('British Airways from London')">🇬🇧 BA London</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('Flights to Tokyo')">🗾 To Tokyo</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('Emirates flights')">🛩️ Emirates</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('Help')">❓ Help</button>
+        </div>
+
+        <div class="chat-input-container">
             <div class="input-group">
-                <input type="text" id="ai-query" placeholder="Ask me about flights in natural language..." style="width: 60%;" value="Show me American Airlines flights">
-                <button onclick="testAIQuery()">Ask AI Assistant</button>
-                <button onclick="getAIHelp()">Get Help & Examples</button>
-            </div>
-            <div id="ai-result" class="result" style="display: none;"></div>
-            <div style="margin-top: 10px; font-size: 14px; color: #666;">
-                <strong>Try asking:</strong> "Show me Delta flights", "Flights from JFK to LAX", "What's the status of flight AA100?", "Active flights departing from Chicago"
-            </div>
-        </div>
-    </div>
-
-    <div class="container">
-        <div class="api-section">
-            <h2>API Endpoints</h2>
-            
-            <div class="endpoint">
-                <h3>Welcome / API Info</h3>
-                <div class="endpoint-url">GET /api/flights/</div>
-                <button onclick="testEndpoint('/api/flights/', 'welcome-result')">Test Welcome</button>
-                <div id="welcome-result" class="result" style="display: none;"></div>
-            </div>
-            
-            <div class="endpoint">
-                <h3>Get Flights by Airline</h3>
-                <div class="endpoint-url">GET /api/flights/airline/{airlineIata}?limit={limit}</div>
-                <div class="input-group">
-                    <input type="text" id="airline-code" placeholder="Airline IATA (e.g., AA, DL, UA)" value="AA">
-                    <input type="number" id="airline-limit" placeholder="Limit" value="5" min="1" max="50">
-                    <button onclick="testAirlineEndpoint()">Get Flights by Airline</button>
-                </div>
-                <div id="airline-result" class="result" style="display: none;"></div>
-            </div>
-            
-            <div class="endpoint">
-                <h3>Get Flights by Departure Airport</h3>
-                <div class="endpoint-url">GET /api/flights/departure/{departureIata}?limit={limit}</div>
-                <div class="input-group">
-                    <input type="text" id="departure-code" placeholder="Departure IATA (e.g., JFK, LAX, ORD)" value="JFK">
-                    <input type="number" id="departure-limit" placeholder="Limit" value="5" min="1" max="50">
-                    <button onclick="testDepartureEndpoint()">Get Flights by Departure</button>
-                </div>
-                <div id="departure-result" class="result" style="display: none;"></div>
-            </div>
-            
-            <div class="endpoint">
-                <h3>Get Flights by Arrival Airport</h3>
-                <div class="endpoint-url">GET /api/flights/arrival/{arrivalIata}?limit={limit}</div>
-                <div class="input-group">
-                    <input type="text" id="arrival-code" placeholder="Arrival IATA (e.g., LAX, JFK, ORD)" value="LAX">
-                    <input type="number" id="arrival-limit" placeholder="Limit" value="5" min="1" max="50">
-                    <button onclick="testArrivalEndpoint()">Get Flights by Arrival</button>
-                </div>
-                <div id="arrival-result" class="result" style="display: none;"></div>
-            </div>
-            
-            <div class="endpoint">
-                <h3>Get Flights by Route</h3>
-                <div class="endpoint-url">GET /api/flights/route/{departureIata}/{arrivalIata}?limit={limit}</div>
-                <div class="input-group">
-                    <input type="text" id="route-departure" placeholder="Departure IATA" value="JFK">
-                    <input type="text" id="route-arrival" placeholder="Arrival IATA" value="LAX">
-                    <input type="number" id="route-limit" placeholder="Limit" value="5" min="1" max="50">
-                    <button onclick="testRouteEndpoint()">Get Flights by Route</button>
-                </div>
-                <div id="route-result" class="result" style="display: none;"></div>
-            </div>
-            
-            <div class="endpoint">
-                <h3>Get Flight by Number</h3>
-                <div class="endpoint-url">GET /api/flights/number/{flightIata}?limit={limit}</div>
-                <div class="input-group">
-                    <input type="text" id="flight-number" placeholder="Flight Number (e.g., AA100, DL123)" value="AA100">
-                    <input type="number" id="flight-limit" placeholder="Limit" value="3" min="1" max="20">
-                    <button onclick="testFlightNumberEndpoint()">Get Flight by Number</button>
-                </div>
-                <div id="flight-number-result" class="result" style="display: none;"></div>
-            </div>
-            
-            <div class="endpoint">
-                <h3>Get Active Flights</h3>
-                <div class="endpoint-url">GET /api/flights/active?limit={limit}</div>
-                <div class="input-group">
-                    <input type="number" id="active-limit" placeholder="Limit" value="10" min="1" max="50">
-                    <button onclick="testActiveFlightsEndpoint()">Get Active Flights</button>
-                </div>
-                <div id="active-result" class="result" style="display: none;"></div>
-            </div>
-            
-            <div class="endpoint">
-                <h3>Health Check</h3>
-                <div class="endpoint-url">GET /api/flights/health</div>
-                <button onclick="testEndpoint('/api/flights/health', 'health-result')">Check Health</button>
-                <div id="health-result" class="result" style="display: none;"></div>
+                <input 
+                    type="text" 
+                    class="chat-input" 
+                    id="messageInput" 
+                    placeholder="Ask me about flights... (e.g., 'Show me flights from JFK to LAX')"
+                    autocomplete="off"
+                >
+                <button class="send-button" id="sendButton" onclick="sendMessage()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                    </svg>
+                </button>
             </div>
         </div>
-    </div>
-
-    <div class="container">
-        <h2>⚠️ Setup Instructions</h2>
-        <ol>
-            <li><strong>Flight API:</strong> Sign up for a free API key at <a href="https://aviationstack.com/" target="_blank">AviationStack</a></li>
-            <li><strong>Gemini AI (Optional):</strong> Get a free API key at <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a></li>
-            <li><strong>Configure:</strong> Update your <code>application.properties</code> file:
-                <div style="background-color: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace;">
-                    flight.api.key=YOUR_ACTUAL_AVIATIONSTACK_KEY_HERE<br>
-                    gemini.api.key=YOUR_ACTUAL_GEMINI_KEY_HERE
-                </div>
-            </li>
-            <li><strong>Restart:</strong> Stop and restart your Spring Boot application</li>
-            <li><strong>Test:</strong> Use this page or the API endpoints directly</li>
-        </ol>
-        <p><strong>Note:</strong> The AI assistant works with fallback responses even without a Gemini API key, but provides enhanced conversational responses when configured.</p>
-        
-        <h3>🚀 Features Available:</h3>
-        <ul>
-            <li>✈️ <strong>Real-time flight data</strong> from AviationStack API</li>
-            <li>🤖 <strong>AI-powered natural language queries</strong> via Gemini integration</li>
-            <li>🔍 <strong>Multiple search options:</strong> airline, airport, route, flight number</li>
-            <li>🌐 <strong>RESTful API</strong> with comprehensive endpoints</li>
-            <li>📱 <strong>Web interface</strong> for easy testing and interaction</li>
-            <li>🛡️ <strong>Rate limiting & error handling</strong> built-in</li>
-        </ul>
     </div>
 
     <script>
         const API_BASE_URL = 'http://localhost:8080';
-        
-        function testEndpoint(endpoint, resultId) {
-            const resultDiv = document.getElementById(resultId);
-            resultDiv.style.display = 'block';
-            resultDiv.className = 'result loading';
-            resultDiv.textContent = 'Loading...';
+        let isTyping = false;
+
+        // Initialize chat
+        document.addEventListener('DOMContentLoaded', function() {
+            const input = document.getElementById('messageInput');
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+        });
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
             
-            fetch(API_BASE_URL + endpoint)
-                .then(response => response.json())
-                .then(data => {
-                    resultDiv.className = 'result success';
-                    resultDiv.textContent = JSON.stringify(data, null, 2);
-                })
-                .catch(error => {
-                    resultDiv.className = 'result error';
-                    resultDiv.textContent = 'Error: ' + error.message + '\n\nMake sure your Spring Boot application is running on localhost:8080 and you have configured your API key.';
-                });
-        }
-        
-        function testAirlineEndpoint() {
-            const airline = document.getElementById('airline-code').value.trim();
-            const limit = document.getElementById('airline-limit').value;
-            if (!airline) {
-                alert('Please enter an airline IATA code');
-                return;
-            }
-            testEndpoint(`/api/flights/airline/${airline}?limit=${limit}`, 'airline-result');
-        }
-        
-        function testDepartureEndpoint() {
-            const departure = document.getElementById('departure-code').value.trim();
-            const limit = document.getElementById('departure-limit').value;
-            if (!departure) {
-                alert('Please enter a departure airport IATA code');
-                return;
-            }
-            testEndpoint(`/api/flights/departure/${departure}?limit=${limit}`, 'departure-result');
-        }
-        
-        function testArrivalEndpoint() {
-            const arrival = document.getElementById('arrival-code').value.trim();
-            const limit = document.getElementById('arrival-limit').value;
-            if (!arrival) {
-                alert('Please enter an arrival airport IATA code');
-                return;
-            }
-            testEndpoint(`/api/flights/arrival/${arrival}?limit=${limit}`, 'arrival-result');
-        }
-        
-        function testRouteEndpoint() {
-            const departure = document.getElementById('route-departure').value.trim();
-            const arrival = document.getElementById('route-arrival').value.trim();
-            const limit = document.getElementById('route-limit').value;
-            if (!departure || !arrival) {
-                alert('Please enter both departure and arrival airport IATA codes');
-                return;
-            }
-            testEndpoint(`/api/flights/route/${departure}/${arrival}?limit=${limit}`, 'route-result');
-        }
-        
-        function testFlightNumberEndpoint() {
-            const flightNumber = document.getElementById('flight-number').value.trim();
-            const limit = document.getElementById('flight-limit').value;
-            if (!flightNumber) {
-                alert('Please enter a flight number');
-                return;
-            }
-            testEndpoint(`/api/flights/number/${flightNumber}?limit=${limit}`, 'flight-number-result');
-        }
-        
-        function testAIQuery() {
-            const query = document.getElementById('ai-query').value.trim();
-            if (!query) {
-                alert('Please enter a query');
-                return;
-            }
+            if (!message || isTyping) return;
             
-            const resultDiv = document.getElementById('ai-result');
-            resultDiv.style.display = 'block';
-            resultDiv.className = 'result loading';
-            resultDiv.textContent = 'Processing your query with AI...';
+            // Add user message
+            addMessage(message, 'user');
+            input.value = '';
             
-            fetch(API_BASE_URL + '/api/conversation/query', {
+            // Show typing indicator
+            showTypingIndicator();
+            
+            // Send to API
+            fetch(`${API_BASE_URL}/api/conversation/query`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ query: query })
+                body: JSON.stringify({ query: message })
             })
             .then(response => response.json())
             .then(data => {
-                resultDiv.className = 'result success';
-                resultDiv.textContent = '🤖 AI Response:\n\n' + data.response + '\n\n' + 
-                                      '⏰ Processed at: ' + new Date(data.timestamp).toLocaleString();
+                hideTypingIndicator();
+                // The new API returns a simple response string, not a structured object
+                addMessage(data.response, 'assistant');
             })
             .catch(error => {
-                resultDiv.className = 'result error';
-                resultDiv.textContent = 'Error: ' + error.message + '\n\nMake sure your application is running and try again.';
+                hideTypingIndicator();
+                addMessage('Sorry, I encountered an error. Please try again.', 'assistant', null, 'error');
+                console.error('Error:', error);
             });
         }
-        
-        function getAIHelp() {
-            const resultDiv = document.getElementById('ai-result');
-            resultDiv.style.display = 'block';
-            resultDiv.className = 'result loading';
-            resultDiv.textContent = 'Getting AI assistant help...';
+
+        function sendSuggestion(message) {
+            document.getElementById('messageInput').value = message;
+            sendMessage();
+        }
+
+        function addMessage(content, sender, flights = null, type = 'info') {
+            const messagesContainer = document.getElementById('chatMessages');
             
-            fetch(API_BASE_URL + '/api/conversation/help')
-            .then(response => response.json())
-            .then(data => {
-                resultDiv.className = 'result success';
-                resultDiv.textContent = data.help + '\n\n📋 Example Queries:\n' + 
-                                      Object.entries(data.examples).map(([key, value]) => `• ${value}`).join('\n');
-            })
-            .catch(error => {
-                resultDiv.className = 'result error';
-                resultDiv.textContent = 'Error: ' + error.message;
-            });
+            // Remove welcome message if it exists
+            const welcomeMessage = messagesContainer.querySelector('.welcome-message');
+            if (welcomeMessage) {
+                welcomeMessage.remove();
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            let flightHTML = '';
+            if (flights && flights.length > 0) {
+                flightHTML = '<div class="flight-results">' + flights.map(flight => createFlightCard(flight)).join('') + '</div>';
+            }
+            
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    ${formatMessage(content)}
+                    ${flightHTML}
+                </div>
+                <div class="message-time">${timestamp}</div>
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
+
+        function formatMessage(message) {
+            // Convert markdown-style formatting to HTML
+            let formatted = message
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\\"/g, '"')      // Handle escaped quotes
+                .replace(/\\n/g, '<br>')  // Handle escaped newlines
+                .replace(/\r\n/g, '<br>') // Handle Windows line endings
+                .replace(/\n/g, '<br>')   // Handle Unix line endings
+                .replace(/\r/g, '<br>')   // Handle Mac line endings
+                
+            // Convert markdown bullet points to HTML
+            // Handle bullet points that start with * or •
+            formatted = formatted.replace(/^[\s]*[\*•]\s*(.+)$/gm, '• $1');
+            formatted = formatted.replace(/<br>[\s]*[\*•]\s*(.+)/g, '<br>• $1');
+            
+            // Convert remaining single asterisks (not bullets) to emphasis
+            formatted = formatted.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+            
+            return formatted;
+        }
+
+        function createFlightCard(flight) {
+            const departure = flight.departure || {};
+            const arrival = flight.arrival || {};
+            const airline = flight.airline || {};
+            const flightInfo = flight.flight || {};
+            
+            const status = flight.flight_status || 'unknown';
+            const statusClass = `status-${status}`;
+            
+            const delay = departure.delay ? `<span style="color: hsl(var(--destructive));">+${departure.delay}min</span>` : '';
+            
+            return `
+                <div class="flight-card">
+                    <div class="flight-header">
+                        <div class="flight-number">${flightInfo.iata || 'N/A'} - ${airline.name || 'Unknown Airline'}</div>
+                        <div class="flight-status ${statusClass}">${status}</div>
+                    </div>
+                    <div class="flight-route">
+                        <div class="airport">
+                            <div class="airport-code">${departure.iata || 'N/A'}</div>
+                            <div class="airport-name">${departure.airport || 'Unknown'}</div>
+                        </div>
+                        <div class="route-arrow">→</div>
+                        <div class="airport">
+                            <div class="airport-code">${arrival.iata || 'N/A'}</div>
+                            <div class="airport-name">${arrival.airport || 'Unknown'}</div>
+                        </div>
+                    </div>
+                    <div class="flight-times">
+                        <div>
+                            <strong>Departure:</strong> 
+                            ${departure.scheduled ? new Date(departure.scheduled).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                            ${delay}
+                        </div>
+                        <div>
+                            <strong>Arrival:</strong> 
+                            ${arrival.scheduled ? new Date(arrival.scheduled).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                        </div>
+                    </div>
+                    ${departure.gate ? `<div class="airline-info">Gate: ${departure.gate} | Terminal: ${departure.terminal || 'N/A'}</div>` : ''}
+                </div>
+            `;
+        }
+
+        function showTypingIndicator() {
+            isTyping = true;
+            document.getElementById('sendButton').disabled = true;
+            
+            const messagesContainer = document.getElementById('chatMessages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message assistant';
+            typingDiv.id = 'typing-indicator';
+            typingDiv.innerHTML = `
+                <div class="typing-indicator">
+                    <div class="typing-dots">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(typingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            isTyping = false;
+            document.getElementById('sendButton').disabled = false;
+            
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        // Auto-focus input
+        document.getElementById('messageInput').focus();
     </script>
 </body>
 </html>
