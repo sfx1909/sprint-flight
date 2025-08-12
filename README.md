@@ -17,10 +17,43 @@ nano .env
 3. Get your API access key
 4. Add to `.env` file: `FLIGHT_API_KEY=your_actual_key_here`
 
-### 3. **Get Gemini API Key** (Optional - for AI features)
-1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. Create API key
-3. Add to `.env` file: `GEMINI_API_KEY=your_actual_key_here`Spring Boot application that integrates with flight APIs to retrieve real-time flight information with AI-powered natural language processing.
+````markdown
+# 🛩️ Sprint Flight API
+
+A secure Spring Boot application that integrates with flight APIs to retrieve real-time flight information with AI-powered natural language processing.
+
+## 🔒 **Security First!**
+
+**⚠️ IMPORTANT:** This application uses environment variables to protect your API keys. **Never commit API keys to version control!**
+
+📖 **[Read the complete Security Guide →](SECURITY.md)**
+
+## 🚀 **Deployment on Railway**
+
+This application is designed for deployment on [Railway](https://railway.app/). The deployment is already configured with:
+
+- ✅ Railway configuration (`railway.json`)
+- ✅ Optimized build configuration for Railway
+- ✅ Environment variable security
+- ✅ Health check endpoint
+- ✅ Automatic HTTPS and custom domains
+
+**Live Application**: [https://sprint-flight-production.up.railway.app](https://sprint-flight-production.up.railway.app)
+
+### Deploy to Railway:
+```bash
+# Install Railway CLI
+npm install -g @railway/cli
+
+# Login and deploy
+railway login
+railway up
+```
+
+### Required Environment Variables:
+Set these in Railway's dashboard or CLI:
+- `FLIGHT_API_KEY`: Your AviationStack API key
+- `GEMINI_API_KEY`: Your Google Gemini API key (optional)
 
 ## 🔒 **Security First!**
 
@@ -30,81 +63,84 @@ nano .env
 
 ## 🚀 Features
 
-- **Real-time Flight Data**: Get current flight information from AviationStack API
-- **Multiple Search Options**: Search by airline, airport, route, or flight number
-- **RESTful API**: Clean REST endpoints for easy integration
-- **Web Interface**: Built-in test interface to try all endpoints
-- **Error Handling**: Comprehensive error handling and logging
-- **Rate Limiting**: Built-in protections against API rate limits
+- **🤖 AI-Powered Conversations**: Natural language flight queries using Google Gemini 2.0 Flash
+- **✈️ Real-time Flight Data**: Current flight information from AviationStack API
+- **🔍 Intelligent Search**: Find flights by airline, airport, route, or natural language
+- **🌐 Modern Web Interface**: Interactive chat assistant and testing tools
+- **🔒 Secure Configuration**: Environment variables protect API keys
+- **⚡ Production Ready**: Deployed on Railway with automatic HTTPS
 
-## 📋 Prerequisites
+## 🔧 API Setup
 
-- Java 24 or higher
-- Spring Boot 3.5.4
-- AviationStack API key (free tier available)
-
-## 🔧 Setup
-
-### 1. Get API Key
-1. Visit [AviationStack](https://aviationstack.com/)
-2. Sign up for a free account
+### 1. AviationStack API (Required)
+1. Visit [AviationStack.com](https://aviationstack.com/)
+2. Sign up for free account
 3. Get your API access key
 
-### 2. Configure Application
-Update `src/main/resources/application.properties` with your API key:
-```properties
-flight.api.key=YOUR_ACTUAL_API_KEY_HERE
-```
-
-### 4. **Build & Run**
-```bash
-# Using Gradle wrapper
-./gradlew bootRun
-
-# Or build JAR and run
-./gradlew build
-java -jar build/libs/sprint-flight-0.0.1-SNAPSHOT.jar
-```
-
-The application will start on `http://localhost:8080`
+### 2. Google Gemini API (Optional - for AI features)
+1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Create API key for enhanced natural language processing
 
 ## 🔍 API Endpoints
 
-### Base URL: `http://localhost:8080/api/flights`
+### Base URL: `https://sprint-flight-production.up.railway.app/api`
 
 | Endpoint | Method | Description | Example |
 |----------|--------|-------------|---------|
-| `/` | GET | API information | `/api/flights/` |
-| `/airline/{code}` | GET | Flights by airline IATA code | `/api/flights/airline/AA?limit=10` |
-| `/departure/{code}` | GET | Flights from departure airport | `/api/flights/departure/JFK?limit=10` |
-| `/arrival/{code}` | GET | Flights to arrival airport | `/api/flights/arrival/LAX?limit=10` |
-| `/route/{from}/{to}` | GET | Flights by route | `/api/flights/route/JFK/LAX?limit=5` |
-| `/number/{flight}` | GET | Flight by number | `/api/flights/number/AA100?limit=3` |
-| `/active` | GET | All active flights | `/api/flights/active?limit=20` |
-| `/health` | GET | Health check | `/api/flights/health` |
+| `/flights/` | GET | API information | `/api/flights/` |
+| `/flights/airline/{code}` | GET | Flights by airline | `/api/flights/airline/AA?limit=10` |
+| `/flights/departure/{code}` | GET | Flights from airport | `/api/flights/departure/JFK?limit=10` |
+| `/flights/arrival/{code}` | GET | Flights to airport | `/api/flights/arrival/LAX?limit=10` |
+| `/flights/route/{from}/{to}` | GET | Flights by route | `/api/flights/route/JFK/LAX?limit=5` |
+| `/flights/active` | GET | All active flights | `/api/flights/active?limit=20` |
+| `/conversation/query` | POST | AI conversation query | See AI Features section |
+| `/flights/health` | GET | Health check | `/api/flights/health` |
 
-### Query Parameters
-- `limit`: Number of results to return (default: varies by endpoint, max: 50-100)
+### AI-Powered Natural Language Queries
+
+Send natural language queries to `/api/conversation/query`:
+
+```bash
+curl -X POST https://sprint-flight-production.up.railway.app/api/conversation/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "Show me flights from London to New York",
+    "conversationId": "unique-session-id"
+  }'
+```
+
+**Example queries:**
+- "Flights from JFK to LAX"
+- "Emirates flights from Dubai"
+- "British Airways departures from London"
+- "Show me active flights"
 
 ## 🖥️ Web Interface
 
-Visit `http://localhost:8080` to access the built-in web interface for testing all API endpoints.
+Visit **[https://sprint-flight-production.up.railway.app](https://sprint-flight-production.up.railway.app)** to access the interactive web interface featuring:
+
+- 🤖 **AI Chat Assistant**: Ask about flights in natural language
+- 🧪 **API Testing Tools**: Interactive endpoint testing
+- 📱 **Responsive Design**: Works on all devices
+- ⚡ **Real-time Results**: Instant flight data and AI responses
 
 ## 📝 Example API Calls
 
 ### Get Flights by Airline
 ```bash
-curl "http://localhost:8080/api/flights/airline/AA?limit=5"
+curl "https://sprint-flight-production.up.railway.app/api/flights/airline/AA?limit=5"
 ```
 
 ### Get Flights by Route
 ```bash
-curl "http://localhost:8080/api/flights/route/JFK/LAX?limit=3"
+curl "https://sprint-flight-production.up.railway.app/api/flights/route/JFK/LAX?limit=3"
 ```
 
-### Get Flight by Number
+### AI Natural Language Query
 ```bash
-curl "http://localhost:8080/api/flights/number/AA100?limit=1"
+curl -X POST https://sprint-flight-production.up.railway.app/api/conversation/query \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Show me Emirates flights from Dubai", "conversationId": "test-123"}'
 ```
 
 ## 📊 Response Format
@@ -160,36 +196,31 @@ All endpoints return JSON with the following structure:
 **Airlines**: AA (American), DL (Delta), UA (United), BA (British Airways)
 **Airports**: JFK (New York), LAX (Los Angeles), ORD (Chicago), LHR (London)
 
-## 🔧 Configuration Options
+## ⚠️ Important Notes
 
-In `application.properties`:
-```properties
-# Server configuration
-server.port=8080
+### API Rate Limits
+- **AviationStack Free**: 1,000 requests/month
+- **Google Gemini**: Generous free tier for AI features
+- Application includes built-in protections and error handling
 
-# Flight API Configuration
-flight.api.base-url=http://api.aviationstack.com/v1
-flight.api.key=YOUR_API_KEY_HERE
-flight.api.timeout=10000
-
-# Logging
-logging.level.github.sfx.sprint_flight=DEBUG
-```
+### Common IATA Codes
+**Airlines**: AA (American), DL (Delta), UA (United), BA (British Airways), EK (Emirates)
+**Airports**: JFK (New York), LAX (Los Angeles), LHR (London), DXB (Dubai)
 
 ## 🏗️ Architecture
 
-- **Controller Layer**: REST endpoints (`FlightController`)
-- **Service Layer**: Business logic and API integration (`FlightService`)
-- **Model Layer**: Data models for flight information
-- **Configuration**: WebClient setup for HTTP calls
+- **🎯 Controller Layer**: REST endpoints (`FlightController`, `ConversationController`)
+- **🧠 Service Layer**: Business logic, API integration, and AI processing
+- **📊 Model Layer**: Flight data models and conversation handling
+- **🔧 Configuration**: Secure environment setup and WebClient configuration
+- **🤖 AI Integration**: Google Gemini 2.0 Flash for natural language processing
 
-## 🧪 Testing
+## 🔒 Security Features
 
-The application includes:
-- Built-in web interface for manual testing
-- Comprehensive error handling
-- Logging for debugging
-- Health check endpoint
+✅ **Environment Variables**: API keys never hardcoded  
+✅ **Secure Logging**: Automatic API key redaction in logs  
+✅ **Railway Deployment**: HTTPS by default, secure environment variables  
+✅ **Input Validation**: Comprehensive request validation and sanitization  
 
 ## 🤝 Contributing
 
@@ -207,13 +238,15 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ### Common Issues
 
-1. **API Key Error (401)**: Check your API key in `application.properties`
+1. **API Key Error (401)**: Verify API key in Railway environment variables
 2. **Rate Limit (429)**: Wait before making more requests or upgrade your plan
-3. **Connection Timeout**: Check your internet connection and API availability
-4. **No Data Returned**: Try different IATA codes or check if flights are available
+3. **Connection Issues**: Check Railway deployment status
+4. **No Data Returned**: Try different IATA codes or check flight availability
 
-### Support
+### Support Resources
 
-- Check the logs for detailed error information
-- Verify your API key is active at AviationStack
-- Ensure you're using valid IATA codes
+- **Railway Console**: Monitor deployment and logs
+- **Health Check**: Visit `/api/flights/health` to verify service status
+- **API Documentation**: Built into the web interface
+- **Security Guide**: See `SECURITY.md` for security best practices
+````

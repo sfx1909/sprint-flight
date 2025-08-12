@@ -29,22 +29,10 @@ public class SprintFlightApplication {
 			return "https://" + railwayUrl;
 		}
 		
-		// Check for Heroku environment
-		String herokuUrl = env.getProperty("HEROKU_APP_NAME");
-		if (herokuUrl != null && !herokuUrl.isEmpty()) {
-			return "https://" + herokuUrl + ".herokuapp.com";
-		}
-		
 		// Check for custom domain
 		String customDomain = env.getProperty("APP_DOMAIN");
 		if (customDomain != null && !customDomain.isEmpty()) {
 			return customDomain.startsWith("http") ? customDomain : "https://" + customDomain;
-		}
-		
-		// Check if PORT is set (indicates cloud deployment)
-		String deployPort = env.getProperty("PORT");
-		if (deployPort != null && !port.equals("8080")) {
-			return "https://your-deployed-app.com"; // Generic cloud message
 		}
 		
 		// Default to localhost for local development

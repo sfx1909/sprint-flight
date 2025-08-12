@@ -111,10 +111,10 @@ gemini.api.key=your_gemini_key_here
 java -jar build/libs/sprint-flight-0.0.1-SNAPSHOT.jar
 ```
 
-### **4. Access:**
-- 🌐 Web Interface: http://localhost:8080
-- 📡 API Base: http://localhost:8080/api/flights
-- 🤖 AI Chat: http://localhost:8080/api/conversation
+### **4. Access the Deployed Application:**
+- 🌐 Web Interface: https://sprint-flight-production.up.railway.app
+- 📡 API Base: https://sprint-flight-production.up.railway.app/api/flights
+- 🤖 AI Chat: https://sprint-flight-production.up.railway.app/api/conversation
 
 ## 💡 **Example Conversations**
 

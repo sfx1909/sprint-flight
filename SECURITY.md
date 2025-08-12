@@ -37,11 +37,13 @@ export FLIGHT_API_KEY="your_actual_aviationstack_api_key_here"
 export GEMINI_API_KEY="your_actual_gemini_api_key_here"
 ```
 
-### **Method 3: Using Docker/Container Environment**
+### **Method 3: Using Railway Environment Variables**
 
-```bash
-docker run -e FLIGHT_API_KEY="your_key" -e GEMINI_API_KEY="your_key" your-app
-```
+Set environment variables in Railway dashboard:
+1. Go to your Railway project dashboard
+2. Navigate to Variables section  
+3. Add `FLIGHT_API_KEY` and `GEMINI_API_KEY`
+4. Redeploy with `railway up`
 
 ---
 

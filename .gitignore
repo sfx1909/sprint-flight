@@ -52,3 +52,4 @@ logs/
 *.tmp
 *.temp
 gradle.properties
+*.log
