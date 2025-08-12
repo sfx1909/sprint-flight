@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprint Flight - Chat Assistant</title>
+    <link rel="stylesheet" href="shadcn-style.css">
+    <style>
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 80vw;
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: hsl(var(--background));
+            box-shadow: 0 0 0 1px hsl(var(--border));
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.8) 100%);
+            color: hsl(var(--primary-foreground));
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 2px 4px -1px rgb(0 0 0 / 0.1);
+            border-bottom: 1px solid hsl(var(--border));
+        }
+
+        .chat-header h1 {
+            font-size: 1.875rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .chat-header p {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            background-color: hsl(var(--muted) / 0.3);
+        }
+
+        .message {
+            margin-bottom: 1.5rem;
+            max-width: 85%;
+            animation: slideUp 0.3s ease-out;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message.user {
+            margin-left: auto;
+            align-items: flex-end;
+        }
+
+        .message.assistant {
+            margin-right: auto;
+            align-items: flex-start;
+        }
+
+        .message-content {
+            padding: 1rem 1.25rem;
+            border-radius: var(--radius);
+            word-wrap: break-word;
+            position: relative;
+            font-size: 0.9375rem;
+            line-height: 1.5;
+            width: fit-content;
+            max-width: 100%;
+            min-width: 2rem;
+        }
+
+        .message-content ul {
+            margin: 0.75rem 0;
+            padding-left: 1.5rem;
+            list-style-type: disc;
+        }
+
+        .message-content li {
+            margin: 0.375rem 0;
+            line-height: 1.5;
+        }
+
+        .message-content ol {
+            margin: 0.75rem 0;
+            padding-left: 1.5rem;
+            list-style-type: decimal;
+        }
+
+        .message.user .message-content {
+            background-color: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            box-shadow: 0 2px 4px -1px hsl(var(--primary) / 0.3);
+        }
+
+        .message.assistant .message-content {
+            background-color: hsl(var(--card));
+            color: hsl(var(--card-foreground));
+            border: 1px solid hsl(var(--border));
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+        }
+
+        .message-time {
+            font-size: 0.6875rem;
+            color: hsl(var(--muted-foreground));
+            margin-top: 0.5rem;
+            width: fit-content;
+        }
+
+        .message.user .message-time {
+            text-align: right;
+            align-self: flex-end;
+        }
+
+        .message.assistant .message-time {
+            text-align: left;
+            align-self: flex-start;
+        }
+
+        .flight-results {
+            margin-top: 1rem;
+        }
+
+        .flight-card {
+            background-color: hsl(var(--muted) / 0.5);
+            border: 1px solid hsl(var(--border));
+            border-radius: var(--radius);
+            padding: 1.125rem;
+            margin-bottom: 0.75rem;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .flight-card:hover {
+            background-color: hsl(var(--muted) / 0.7);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        .flight-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .flight-number {
+            font-weight: 600;
+            font-size: 1rem;
+            color: hsl(var(--primary));
+        }
+
+        .flight-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .status-active {
+            background-color: hsl(142 71% 45% / 0.1);
+            color: hsl(142 71% 45%);
+            border: 1px solid hsl(142 71% 45% / 0.2);
+        }
+
+        .status-scheduled {
+            background-color: hsl(var(--primary) / 0.1);
+            color: hsl(var(--primary));
+            border: 1px solid hsl(var(--primary) / 0.2);
+        }
+
+        .status-delayed {
+            background-color: hsl(var(--destructive) / 0.1);
+            color: hsl(var(--destructive));
+            border: 1px solid hsl(var(--destructive) / 0.2);
+        }
+
+        .flight-route {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 0.75rem 0;
+        }
+
+        .airport {
+            text-align: center;
+            flex: 1;
+        }
+
+        .airport-code {
+            font-weight: 600;
+            font-size: 1.125rem;
+            color: hsl(var(--foreground));
+        }
+
+        .airport-name {
+            font-size: 0.75rem;
+            color: hsl(var(--muted-foreground));
+            margin-top: 0.125rem;
+        }
+
+        .route-arrow {
+            margin: 0 1.25rem;
+            color: hsl(var(--primary));
+            font-size: 1.25rem;
+        }
+
+        .flight-times {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: hsl(var(--muted-foreground));
+            margin-top: 0.5rem;
+        }
+
+        .airline-info {
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid hsl(var(--border));
+            font-size: 0.75rem;
+            color: hsl(var(--muted-foreground));
+        }
+
+        .chat-input-container {
+            padding: 1.5rem;
+            background-color: hsl(var(--background));
+            border-top: 1px solid hsl(var(--border));
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            background-color: hsl(var(--muted) / 0.3);
+            border: 1px solid hsl(var(--border));
+            border-radius: calc(var(--radius) * 3);
+            padding: 0.375rem;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .input-group:focus-within {
+            border-color: hsl(var(--ring));
+            box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
+        }
+
+        .chat-input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 0.875rem 1.25rem;
+            font-size: 1rem;
+            outline: none;
+            border-radius: calc(var(--radius) * 2.5);
+            color: hsl(var(--foreground));
+        }
+
+        .chat-input::placeholder {
+            color: hsl(var(--muted-foreground));
+        }
+
+        .send-button {
+            background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.9) 100%);
+            color: hsl(var(--primary-foreground));
+            border: none;
+            border-radius: 50%;
+            width: 3rem;
+            height: 3rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease-in-out;
+            margin-right: 0.25rem;
+            box-shadow: 0 2px 4px hsl(var(--primary) / 0.2);
+        }
+
+        .send-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px hsl(var(--primary) / 0.3);
+        }
+
+        .send-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .suggestions {
+            padding: 1rem 1.5rem 1rem;
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            max-height: 7.5rem;
+            overflow-y: auto;
+        }
+
+        .suggestion-chip {
+            background-color: hsl(var(--muted));
+            border: 1px solid hsl(var(--border));
+            border-radius: calc(var(--radius) * 2.5);
+            padding: 0.625rem 1.125rem;
+            font-size: 0.8125rem;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            white-space: nowrap;
+            color: hsl(var(--foreground));
+            font-weight: 500;
+        }
+
+        .suggestion-chip:hover {
+            background-color: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            border-color: hsl(var(--primary));
+            transform: translateY(-1px);
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            padding: 0.9375rem 1.25rem;
+            margin-bottom: 1.25rem;
+            max-width: 5rem;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .typing-dot {
+            width: 0.5rem;
+            height: 0.5rem;
+            background-color: hsl(var(--primary));
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typing {
+            0%, 80%, 100% { 
+                transform: scale(0);
+                opacity: 0.5;
+            }
+            40% { 
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .welcome-message {
+            text-align: center;
+            padding: 3.125rem 1.5rem;
+            color: hsl(var(--muted-foreground));
+        }
+
+        .welcome-message h2 {
+            color: hsl(var(--foreground));
+            margin-bottom: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .chat-container {
+                width: 100vw;
+                height: 100vh;
+                border-radius: 0;
+                box-shadow: none;
+            }
+
+            .message {
+                max-width: 95%;
+            }
+
+            .message-content {
+                max-width: calc(100vw - 4rem);
+            }
+
+            .flight-route {
+                flex-direction: column;
+                gap: 0.625rem;
+            }
+
+            .route-arrow {
+                transform: rotate(90deg);
+                margin: 0.3125rem 0;
+            }
+
+            .suggestions {
+                padding: 0.75rem 1rem 0.75rem;
+            }
+
+            .suggestion-chip {
+                padding: 0.5rem 0.875rem;
+                font-size: 0.75rem;
+            }
+        }
+
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .chat-container {
+                width: 85vw;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>✈️ Sprint Flight Assistant</h1>
+            <p>Your intelligent flight search companion</p>
+            <button onclick="clearConversation()" style="position: absolute; top: 1rem; right: 1rem; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.75rem; cursor: pointer;">
+                🗑️ Clear Chat
+            </button>
+        </div>
+
+        <div class="chat-messages scrollbar-thin" id="chatMessages">
+            <div class="welcome-message">
+                <h2>👋 Welcome to Sprint Flight!</h2>
+                <p>I'm your AI flight assistant. Ask me anything about flights in natural language:</p>
+                <div class="suggestions" style="justify-content: center; margin-top: 1rem;">
+                    <button class="suggestion-chip" onclick="sendSuggestion('Show me flights from London to Tokyo')">🌍 LHR to NRT</button>
+                    <button class="suggestion-chip" onclick="sendSuggestion('Emirates flights from Dubai')">✈️ Emirates Dubai</button>
+                    <button class="suggestion-chip" onclick="sendSuggestion('What flights are leaving from Frankfurt?')">🛫 Frankfurt departures</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="suggestions" id="suggestions">
+            <button class="suggestion-chip" onclick="sendSuggestion('Show me active flights')">🌍 Active flights</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('Flights from Paris to New York')">🗽 Paris to NYC</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('Singapore Airlines flights')">🌏 Singapore Airlines</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('British Airways from London')">🇬🇧 BA London</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('Flights to Tokyo')">🗾 To Tokyo</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('Emirates flights')">🛩️ Emirates</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('Help')">❓ Help</button>
+        </div>
+
+        <div class="chat-input-container">
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    class="chat-input" 
+                    id="messageInput" 
+                    placeholder="Ask me about flights... (e.g., 'Show me flights from JFK to LAX')"
+                    autocomplete="off"
+                >
+                <button class="send-button" id="sendButton" onclick="sendMessage()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dynamically determine the API base URL based on current domain
+        const API_BASE_URL = window.location.origin;
+        
+        console.log('🌐 Sprint Flight API Base URL:', API_BASE_URL);
+        let isTyping = false;
+        let conversationId = generateConversationId();
+
+        // Generate a unique conversation ID for this session
+        function generateConversationId() {
+            return 'conv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // Clear conversation and start fresh
+        function clearConversation() {
+            conversationId = generateConversationId();
+            const messagesContainer = document.getElementById('chatMessages');
+            messagesContainer.innerHTML = `
+                <div class="welcome-message">
+                    <h2>👋 Welcome to Sprint Flight!</h2>
+                    <p>I'm your AI flight assistant. Ask me anything about flights in natural language:</p>
+                    <div class="suggestions" style="justify-content: center; margin-top: 1rem;">
+                        <button class="suggestion-chip" onclick="sendSuggestion('Show me flights from London to Tokyo')">🌍 LHR to NRT</button>
+                        <button class="suggestion-chip" onclick="sendSuggestion('Emirates flights from Dubai')">✈️ Emirates Dubai</button>
+                        <button class="suggestion-chip" onclick="sendSuggestion('What flights are leaving from Frankfurt?')">🛫 Frankfurt departures</button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('messageInput').focus();
+        }
+
+        // Initialize chat
+        document.addEventListener('DOMContentLoaded', function() {
+            const input = document.getElementById('messageInput');
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+        });
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message || isTyping) return;
+            
+            // Add user message
+            addMessage(message, 'user');
+            input.value = '';
+            
+            // Show typing indicator
+            showTypingIndicator();
+            
+            // Send to API
+            fetch(`${API_BASE_URL}/api/conversation/query`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    query: message,
+                    conversationId: conversationId 
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideTypingIndicator();
+                // The new API returns a simple response string, not a structured object
+                addMessage(data.response, 'assistant');
+            })
+            .catch(error => {
+                hideTypingIndicator();
+                addMessage('Sorry, I encountered an error. Please try again.', 'assistant', null, 'error');
+                console.error('Error:', error);
+            });
+        }
+
+        function sendSuggestion(message) {
+            document.getElementById('messageInput').value = message;
+            sendMessage();
+        }
+
+        function addMessage(content, sender, flights = null, type = 'info') {
+            const messagesContainer = document.getElementById('chatMessages');
+            
+            // Remove welcome message if it exists
+            const welcomeMessage = messagesContainer.querySelector('.welcome-message');
+            if (welcomeMessage) {
+                welcomeMessage.remove();
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            let flightHTML = '';
+            if (flights && flights.length > 0) {
+                flightHTML = '<div class="flight-results">' + flights.map(flight => createFlightCard(flight)).join('') + '</div>';
+            }
+            
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    ${formatMessage(content)}
+                    ${flightHTML}
+                </div>
+                <div class="message-time">${timestamp}</div>
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function formatMessage(message) {
+            // Safely escape HTML first to prevent XSS
+            let formatted = message
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+            
+            // Now apply safe formatting
+            // Convert line breaks
+            formatted = formatted
+                .replace(/\r\n/g, '\n')
+                .replace(/\r/g, '\n')
+                .replace(/\n/g, '<br>');
+            
+            // Convert **bold** to <strong>
+            formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            // Convert *italic* to <em> (but not bullet points)
+            formatted = formatted.replace(/(?<!\w)\*([^*<>\n]+?)\*(?!\w)/g, '<em>$1</em>');
+            
+            // Convert bullet points to lists
+            const lines = formatted.split('<br>');
+            let inList = false;
+            let result = [];
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                
+                // Check if this line is a bullet point
+                if (line.match(/^[\s]*[•\*\-]\s+(.+)/)) {
+                    if (!inList) {
+                        result.push('<ul>');
+                        inList = true;
+                    }
+                    const content = line.replace(/^[\s]*[•\*\-]\s+/, '');
+                    result.push(`<li>${content}</li>`);
+                } else if (line === '') {
+                    // Empty line - if we're in a list, check if next line continues the list
+                    if (inList && i + 1 < lines.length) {
+                        const nextLine = lines[i + 1].trim();
+                        if (!nextLine.match(/^[\s]*[•\*\-]\s+(.+)/)) {
+                            result.push('</ul>');
+                            inList = false;
+                        }
+                    }
+                    if (!inList) result.push('<br>');
+                } else {
+                    // Regular line
+                    if (inList) {
+                        result.push('</ul>');
+                        inList = false;
+                    }
+                    if (line) result.push(line + '<br>');
+                }
+            }
+            
+            // Close any open list
+            if (inList) {
+                result.push('</ul>');
+            }
+            
+            // Clean up extra <br> tags at the end
+            let final = result.join('').replace(/<br>$/, '');
+            
+            return final;
+        }
+
+        function createFlightCard(flight) {
+            const departure = flight.departure || {};
+            const arrival = flight.arrival || {};
+            const airline = flight.airline || {};
+            const flightInfo = flight.flight || {};
+            
+            const status = flight.flight_status || 'unknown';
+            const statusClass = `status-${status}`;
+            
+            const delay = departure.delay ? `<span style="color: hsl(var(--destructive));">+${departure.delay}min</span>` : '';
+            
+            return `
+                <div class="flight-card">
+                    <div class="flight-header">
+                        <div class="flight-number">${flightInfo.iata || 'N/A'} - ${airline.name || 'Unknown Airline'}</div>
+                        <div class="flight-status ${statusClass}">${status}</div>
+                    </div>
+                    <div class="flight-route">
+                        <div class="airport">
+                            <div class="airport-code">${departure.iata || 'N/A'}</div>
+                            <div class="airport-name">${departure.airport || 'Unknown'}</div>
+                        </div>
+                        <div class="route-arrow">→</div>
+                        <div class="airport">
+                            <div class="airport-code">${arrival.iata || 'N/A'}</div>
+                            <div class="airport-name">${arrival.airport || 'Unknown'}</div>
+                        </div>
+                    </div>
+                    <div class="flight-times">
+                        <div>
+                            <strong>Departure:</strong> 
+                            ${departure.scheduled ? new Date(departure.scheduled).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                            ${delay}
+                        </div>
+                        <div>
+                            <strong>Arrival:</strong> 
+                            ${arrival.scheduled ? new Date(arrival.scheduled).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                        </div>
+                    </div>
+                    ${departure.gate ? `<div class="airline-info">Gate: ${departure.gate} | Terminal: ${departure.terminal || 'N/A'}</div>` : ''}
+                </div>
+            `;
+        }
+
+        function showTypingIndicator() {
+            isTyping = true;
+            document.getElementById('sendButton').disabled = true;
+            
+            const messagesContainer = document.getElementById('chatMessages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message assistant';
+            typingDiv.id = 'typing-indicator';
+            typingDiv.innerHTML = `
+                <div class="typing-indicator">
+                    <div class="typing-dots">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(typingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            isTyping = false;
+            document.getElementById('sendButton').disabled = false;
+            
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        // Auto-focus input
+        document.getElementById('messageInput').focus();
+    </script>
+</body>
+</html>
