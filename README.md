@@ -1,6 +1,32 @@
-# 🛩️ Sprint Flight - Spring Boot Flight API Integration
+# 🛩️ Sprint Flight API
 
-A Spring Boot application that integrates with flight APIs to retrieve real-time flight information.
+## 🚀 Quick Start
+
+### 1. **Secure Setup** (Required)
+```bash
+# Copy environment template
+cp .env.example .env
+
+# Edit .env with your actual API keys (NEVER commit this file!)
+nano .env
+```
+
+### 2. **Get API Key** (AviationStack - Required)
+1. Visit [AviationStack.com](https://aviationstack.com/)
+2. Sign up for free account  
+3. Get your API access key
+4. Add to `.env` file: `FLIGHT_API_KEY=your_actual_key_here`
+
+### 3. **Get Gemini API Key** (Optional - for AI features)
+1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Create API key
+3. Add to `.env` file: `GEMINI_API_KEY=your_actual_key_here`Spring Boot application that integrates with flight APIs to retrieve real-time flight information with AI-powered natural language processing.
+
+## 🔒 **Security First!**
+
+**⚠️ IMPORTANT:** This application uses environment variables to protect your API keys. **Never commit API keys to version control!**
+
+📖 **[Read the complete Security Guide →](SECURITY.md)**
 
 ## 🚀 Features
 
@@ -30,7 +56,7 @@ Update `src/main/resources/application.properties` with your API key:
 flight.api.key=YOUR_ACTUAL_API_KEY_HERE
 ```
 
-### 3. Build and Run
+### 4. **Build & Run**
 ```bash
 # Using Gradle wrapper
 ./gradlew bootRun

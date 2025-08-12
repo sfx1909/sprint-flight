@@ -1,795 +1,560 @@
 package github.sfx.sprint_flight.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import java.util.*;
-import java.util.regex.Pattern;
+
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class NaturalLanguageProcessor {
     
-    // Airport codes mapping
-    private final Map<String, String> airportCodes = new HashMap<>();
-    private final Map<String, String> airlineCodes = new HashMap<>();
+    private static final Logger logger = LoggerFactory.getLogger(NaturalLanguageProcessor.class);
     
-    // Patterns for different query types
-    private final Pattern flightNumberPattern = Pattern.compile("\\b([A-Z]{1,3}\\d{1,4})\\b", Pattern.CASE_INSENSITIVE);
-    private final Pattern routePattern = Pattern.compile("\\b(from|leaving|departing)\\s+([A-Z]{3}|[a-zA-Z\\s]+)\\s+(to|going|arriving)\\s+([A-Z]{3}|[a-zA-Z\\s]+)\\b", Pattern.CASE_INSENSITIVE);
-    private final Pattern departurePattern = Pattern.compile("\\b(from|leaving|departing|out of)\\s+([A-Z]{3}|[a-zA-Z\\s]+)\\b", Pattern.CASE_INSENSITIVE);
-    private final Pattern arrivalPattern = Pattern.compile("\\b(to|going to|arriving at|landing at)\\s+([A-Z]{3}|[a-zA-Z\\s]+)\\b", Pattern.CASE_INSENSITIVE);
-    private final Pattern airlinePattern = Pattern.compile("\\b(on|with|by)\\s+([A-Z]{2,3}|american|delta|united|southwest|jetblue|alaska|spirit|frontier)\\b", Pattern.CASE_INSENSITIVE);
-    
-    public NaturalLanguageProcessor() {
-        initializeAirportCodes();
-        initializeAirlineCodes();
+    // Enhanced airline mapping with multiple name variations
+    private static final Map<String, String> AIRLINE_MAPPING = new HashMap<>();
+    static {
+        // US Airlines
+        AIRLINE_MAPPING.put("american", "AA");
+        AIRLINE_MAPPING.put("american airlines", "AA");
+        AIRLINE_MAPPING.put("aa", "AA");
+        AIRLINE_MAPPING.put("delta", "DL");
+        AIRLINE_MAPPING.put("delta airlines", "DL");
+        AIRLINE_MAPPING.put("dl", "DL");
+        AIRLINE_MAPPING.put("united", "UA");
+        AIRLINE_MAPPING.put("united airlines", "UA");
+        AIRLINE_MAPPING.put("ua", "UA");
+        AIRLINE_MAPPING.put("southwest", "WN");
+        AIRLINE_MAPPING.put("southwest airlines", "WN");
+        AIRLINE_MAPPING.put("jetblue", "B6");
+        AIRLINE_MAPPING.put("jet blue", "B6");
+        AIRLINE_MAPPING.put("alaska", "AS");
+        AIRLINE_MAPPING.put("alaska airlines", "AS");
+        
+        // International Airlines
+        AIRLINE_MAPPING.put("british airways", "BA");
+        AIRLINE_MAPPING.put("ba", "BA");
+        AIRLINE_MAPPING.put("lufthansa", "LH");
+        AIRLINE_MAPPING.put("air france", "AF");
+        AIRLINE_MAPPING.put("klm", "KL");
+        AIRLINE_MAPPING.put("emirates", "EK");
+        AIRLINE_MAPPING.put("qatar", "QR");
+        AIRLINE_MAPPING.put("qatar airways", "QR");
+        AIRLINE_MAPPING.put("singapore airlines", "SQ");
+        AIRLINE_MAPPING.put("cathay pacific", "CX");
+        AIRLINE_MAPPING.put("etihad", "EY");
+        
+        // African Airlines
+        AIRLINE_MAPPING.put("south african airways", "SA");
+        AIRLINE_MAPPING.put("saa", "SA");
+        AIRLINE_MAPPING.put("ethiopian", "ET");
+        AIRLINE_MAPPING.put("kenya airways", "KQ");
     }
     
-    private void initializeAirportCodes() {
-        // Major US airports
-        airportCodes.put("new york", "JFK");
-        airportCodes.put("nyc", "JFK");
-        airportCodes.put("kennedy", "JFK");
-        airportCodes.put("jfk", "JFK");
-        airportCodes.put("laguardia", "LGA");
-        airportCodes.put("lga", "LGA");
-        airportCodes.put("newark", "EWR");
-        airportCodes.put("ewr", "EWR");
-        
-        airportCodes.put("los angeles", "LAX");
-        airportCodes.put("la", "LAX");
-        airportCodes.put("lax", "LAX");
-        
-        airportCodes.put("chicago", "ORD");
-        airportCodes.put("ohare", "ORD");
-        airportCodes.put("ord", "ORD");
-        airportCodes.put("midway", "MDW");
-        airportCodes.put("mdw", "MDW");
-        
-        airportCodes.put("atlanta", "ATL");
-        airportCodes.put("atl", "ATL");
-        
-        airportCodes.put("dallas", "DFW");
-        airportCodes.put("dfw", "DFW");
-        
-        airportCodes.put("denver", "DEN");
-        airportCodes.put("den", "DEN");
-        
-        airportCodes.put("san francisco", "SFO");
-        airportCodes.put("sf", "SFO");
-        airportCodes.put("sfo", "SFO");
-        
-        airportCodes.put("miami", "MIA");
-        airportCodes.put("mia", "MIA");
-        
-        airportCodes.put("seattle", "SEA");
-        airportCodes.put("sea", "SEA");
-        
-        airportCodes.put("boston", "BOS");
-        airportCodes.put("bos", "BOS");
-        
-        airportCodes.put("washington", "DCA");
-        airportCodes.put("dc", "DCA");
-        airportCodes.put("dulles", "IAD");
-        airportCodes.put("iad", "IAD");
-        airportCodes.put("dca", "DCA");
-        
-        airportCodes.put("phoenix", "PHX");
-        airportCodes.put("phx", "PHX");
-        
-        airportCodes.put("las vegas", "LAS");
-        airportCodes.put("vegas", "LAS");
-        airportCodes.put("las", "LAS");
-        
-        airportCodes.put("orlando", "MCO");
-        airportCodes.put("mco", "MCO");
-        
-        airportCodes.put("houston", "IAH");
-        airportCodes.put("iah", "IAH");
-        airportCodes.put("hobby", "HOU");
-        airportCodes.put("hou", "HOU");
-        
-        airportCodes.put("san diego", "SAN");
-        airportCodes.put("san", "SAN");
-        
-        airportCodes.put("minneapolis", "MSP");
-        airportCodes.put("msp", "MSP");
-        
-        airportCodes.put("detroit", "DTW");
-        airportCodes.put("dtw", "DTW");
-        
-        airportCodes.put("salt lake city", "SLC");
-        airportCodes.put("slc", "SLC");
-        
-        // EUROPE
-        airportCodes.put("london", "LHR");
-        airportCodes.put("heathrow", "LHR");
-        airportCodes.put("lhr", "LHR");
-        airportCodes.put("gatwick", "LGW");
-        airportCodes.put("lgw", "LGW");
-        airportCodes.put("stansted", "STN");
-        airportCodes.put("stn", "STN");
-        airportCodes.put("luton", "LTN");
-        airportCodes.put("ltn", "LTN");
-        
-        airportCodes.put("paris", "CDG");
-        airportCodes.put("charles de gaulle", "CDG");
-        airportCodes.put("cdg", "CDG");
-        airportCodes.put("orly", "ORY");
-        airportCodes.put("ory", "ORY");
-        
-        airportCodes.put("frankfurt", "FRA");
-        airportCodes.put("fra", "FRA");
-        
-        airportCodes.put("amsterdam", "AMS");
-        airportCodes.put("schiphol", "AMS");
-        airportCodes.put("ams", "AMS");
-        
-        airportCodes.put("madrid", "MAD");
-        airportCodes.put("barajas", "MAD");
-        airportCodes.put("mad", "MAD");
-        
-        airportCodes.put("barcelona", "BCN");
-        airportCodes.put("bcn", "BCN");
-        
-        airportCodes.put("rome", "FCO");
-        airportCodes.put("fiumicino", "FCO");
-        airportCodes.put("fco", "FCO");
-        
-        airportCodes.put("milan", "MXP");
-        airportCodes.put("malpensa", "MXP");
-        airportCodes.put("mxp", "MXP");
-        
-        airportCodes.put("zurich", "ZUR");
-        airportCodes.put("zur", "ZUR");
-        
-        airportCodes.put("vienna", "VIE");
-        airportCodes.put("vie", "VIE");
-        
-        airportCodes.put("munich", "MUC");
-        airportCodes.put("muc", "MUC");
-        
-        airportCodes.put("copenhagen", "CPH");
-        airportCodes.put("cph", "CPH");
-        
-        airportCodes.put("stockholm", "ARN");
-        airportCodes.put("arlanda", "ARN");
-        airportCodes.put("arn", "ARN");
-        
-        airportCodes.put("oslo", "OSL");
-        airportCodes.put("osl", "OSL");
-        
-        airportCodes.put("helsinki", "HEL");
-        airportCodes.put("hel", "HEL");
-        
-        airportCodes.put("dublin", "DUB");
-        airportCodes.put("dub", "DUB");
-        
-        airportCodes.put("brussels", "BRU");
-        airportCodes.put("bru", "BRU");
-        
-        airportCodes.put("lisbon", "LIS");
-        airportCodes.put("lis", "LIS");
-        
-        airportCodes.put("athens", "ATH");
-        airportCodes.put("ath", "ATH");
-        
-        airportCodes.put("istanbul", "IST");
-        airportCodes.put("ist", "IST");
-        
-        // ASIA-PACIFIC
-        airportCodes.put("tokyo", "NRT");
-        airportCodes.put("narita", "NRT");
-        airportCodes.put("nrt", "NRT");
-        airportCodes.put("haneda", "HND");
-        airportCodes.put("hnd", "HND");
-        
-        airportCodes.put("osaka", "KIX");
-        airportCodes.put("kansai", "KIX");
-        airportCodes.put("kix", "KIX");
-        
-        airportCodes.put("seoul", "ICN");
-        airportCodes.put("incheon", "ICN");
-        airportCodes.put("icn", "ICN");
-        
-        airportCodes.put("beijing", "PEK");
-        airportCodes.put("pek", "PEK");
-        
-        airportCodes.put("shanghai", "PVG");
-        airportCodes.put("pudong", "PVG");
-        airportCodes.put("pvg", "PVG");
-        
-        airportCodes.put("hong kong", "HKG");
-        airportCodes.put("hkg", "HKG");
-        
-        airportCodes.put("singapore", "SIN");
-        airportCodes.put("changi", "SIN");
-        airportCodes.put("sin", "SIN");
-        
-        airportCodes.put("bangkok", "BKK");
-        airportCodes.put("suvarnabhumi", "BKK");
-        airportCodes.put("bkk", "BKK");
-        
-        airportCodes.put("kuala lumpur", "KUL");
-        airportCodes.put("kul", "KUL");
-        
-        airportCodes.put("jakarta", "CGK");
-        airportCodes.put("soekarno hatta", "CGK");
-        airportCodes.put("cgk", "CGK");
-        
-        airportCodes.put("manila", "MNL");
-        airportCodes.put("mnl", "MNL");
-        
-        airportCodes.put("delhi", "DEL");
-        airportCodes.put("new delhi", "DEL");
-        airportCodes.put("del", "DEL");
-        
-        airportCodes.put("mumbai", "BOM");
-        airportCodes.put("bombay", "BOM");
-        airportCodes.put("bom", "BOM");
-        
-        airportCodes.put("sydney", "SYD");
-        airportCodes.put("kingsford smith", "SYD");
-        airportCodes.put("syd", "SYD");
-        
-        airportCodes.put("melbourne", "MEL");
-        airportCodes.put("mel", "MEL");
-        
-        airportCodes.put("brisbane", "BNE");
-        airportCodes.put("bne", "BNE");
-        
-        airportCodes.put("perth", "PER");
-        airportCodes.put("per", "PER");
-        
-        airportCodes.put("auckland", "AKL");
-        airportCodes.put("akl", "AKL");
-        
-        // CANADA
-        airportCodes.put("toronto", "YYZ");
-        airportCodes.put("pearson", "YYZ");
-        airportCodes.put("yyz", "YYZ");
-        
-        airportCodes.put("vancouver", "YVR");
-        airportCodes.put("yvr", "YVR");
-        
-        airportCodes.put("montreal", "YUL");
-        airportCodes.put("yul", "YUL");
-        
-        airportCodes.put("calgary", "YYC");
-        airportCodes.put("yyc", "YYC");
-        
-        // MIDDLE EAST & AFRICA
-        airportCodes.put("dubai", "DXB");
-        airportCodes.put("dxb", "DXB");
-        
-        airportCodes.put("abu dhabi", "AUH");
-        airportCodes.put("auh", "AUH");
-        
-        airportCodes.put("doha", "DOH");
-        airportCodes.put("hamad", "DOH");
-        airportCodes.put("doh", "DOH");
-        
-        airportCodes.put("riyadh", "RUH");
-        airportCodes.put("ruh", "RUH");
-        
-        airportCodes.put("jeddah", "JED");
-        airportCodes.put("jed", "JED");
-        
-        airportCodes.put("kuwait", "KWI");
-        airportCodes.put("kwi", "KWI");
-        
-        airportCodes.put("tel aviv", "TLV");
-        airportCodes.put("ben gurion", "TLV");
-        airportCodes.put("tlv", "TLV");
-        
-        airportCodes.put("cairo", "CAI");
-        airportCodes.put("cai", "CAI");
-        
-        airportCodes.put("casablanca", "CMN");
-        airportCodes.put("mohammed v", "CMN");
-        airportCodes.put("cmn", "CMN");
-        
-        airportCodes.put("johannesburg", "JNB");
-        airportCodes.put("or tambo", "JNB");
-        airportCodes.put("jnb", "JNB");
-        
-        airportCodes.put("cape town", "CPT");
-        airportCodes.put("cpt", "CPT");
-        
-        // SOUTH AMERICA
-        airportCodes.put("sao paulo", "GRU");
-        airportCodes.put("guarulhos", "GRU");
-        airportCodes.put("gru", "GRU");
-        
-        airportCodes.put("rio de janeiro", "GIG");
-        airportCodes.put("galeao", "GIG");
-        airportCodes.put("gig", "GIG");
-        
-        airportCodes.put("buenos aires", "EZE");
-        airportCodes.put("ezeiza", "EZE");
-        airportCodes.put("eze", "EZE");
-        
-        airportCodes.put("lima", "LIM");
-        airportCodes.put("jorge chavez", "LIM");
-        airportCodes.put("lim", "LIM");
-        
-        airportCodes.put("bogota", "BOG");
-        airportCodes.put("bog", "BOG");
-        
-        airportCodes.put("mexico city", "MEX");
-        airportCodes.put("mex", "MEX");
-        
-        airportCodes.put("cancun", "CUN");
-        airportCodes.put("cun", "CUN");
-        
-        // RUSSIA
-        airportCodes.put("moscow", "SVO");
-        airportCodes.put("sheremetyevo", "SVO");
-        airportCodes.put("svo", "SVO");
-        airportCodes.put("domodedovo", "DME");
-        airportCodes.put("dme", "DME");
-        
-        airportCodes.put("st petersburg", "LED");
-        airportCodes.put("pulkovo", "LED");
-        airportCodes.put("led", "LED");
+    // Comprehensive airport and city mapping with aliases
+    private static final Map<String, AirportInfo> AIRPORT_MAPPING = new HashMap<>();
+    static {
+        // Major US Airports
+        addAirport("JFK", "John F Kennedy International", "new york", "ny", "jfk", "kennedy");
+        addAirport("LGA", "LaGuardia Airport", "new york laguardia", "lga", "laguardia");
+        addAirport("EWR", "Newark Liberty International", "newark", "new york newark", "ewr");
+        addAirport("LAX", "Los Angeles International", "los angeles", "la", "lax", "california");
+        addAirport("ORD", "O'Hare International", "chicago", "ohare", "o'hare", "ord");
+        addAirport("MDW", "Chicago Midway", "chicago midway", "midway", "mdw");
+        addAirport("MIA", "Miami International", "miami", "mia", "florida");
+        addAirport("SFO", "San Francisco International", "san francisco", "sf", "sfo");
+        addAirport("BOS", "Logan International", "boston", "logan", "bos");
+        addAirport("SEA", "Seattle-Tacoma International", "seattle", "sea", "tacoma");
+        addAirport("DEN", "Denver International", "denver", "den", "colorado");
+        addAirport("ATL", "Hartsfield-Jackson Atlanta International", "atlanta", "atl", "georgia");
+        addAirport("DFW", "Dallas/Fort Worth International", "dallas", "dfw", "fort worth");
+        addAirport("IAH", "George Bush Intercontinental", "houston", "iah", "bush");
+        addAirport("PHX", "Phoenix Sky Harbor", "phoenix", "phx", "sky harbor");
+        addAirport("LAS", "McCarran International", "las vegas", "vegas", "las", "mccarran");
+        
+        // International Airports
+        addAirport("LHR", "Heathrow Airport", "london", "heathrow", "lhr", "london heathrow");
+        addAirport("LGW", "Gatwick Airport", "london gatwick", "gatwick", "lgw");
+        addAirport("CDG", "Charles de Gaulle", "paris", "cdg", "charles de gaulle");
+        addAirport("FRA", "Frankfurt am Main", "frankfurt", "fra", "germany");
+        addAirport("AMS", "Amsterdam Schiphol", "amsterdam", "schiphol", "ams");
+        addAirport("NRT", "Narita International", "tokyo", "narita", "nrt");
+        addAirport("HND", "Haneda Airport", "tokyo haneda", "haneda", "hnd");
+        addAirport("ICN", "Incheon International", "seoul", "incheon", "icn", "south korea");
+        addAirport("SIN", "Changi Airport", "singapore", "changi", "sin");
+        addAirport("HKG", "Hong Kong International", "hong kong", "hkg", "hongkong");
+        addAirport("DXB", "Dubai International", "dubai", "dxb", "uae");
+        addAirport("DOH", "Hamad International", "doha", "doh", "qatar");
+        
+        // South African Airports
+        addAirport("CPT", "Cape Town International", "cape town", "capetown", "cpt");
+        addAirport("JNB", "OR Tambo International", "johannesburg", "jnb", "or tambo", "joburg");
+        addAirport("DUR", "King Shaka International", "durban", "dur", "king shaka");
+        
+        // Australian Airports
+        addAirport("SYD", "Kingsford Smith Airport", "sydney", "syd", "kingsford smith");
+        addAirport("MEL", "Melbourne Airport", "melbourne", "mel", "tullamarine");
+        addAirport("BNE", "Brisbane Airport", "brisbane", "bne");
+        addAirport("PER", "Perth Airport", "perth", "per");
+        
+        // Canadian Airports
+        addAirport("YYZ", "Toronto Pearson", "toronto", "yyz", "pearson");
+        addAirport("YVR", "Vancouver International", "vancouver", "yvr");
+        addAirport("YUL", "Montreal-Trudeau", "montreal", "yul", "trudeau");
+        
+        // Indian Airports
+        addAirport("BOM", "Chhatrapati Shivaji International", "mumbai", "bom", "bombay");
+        addAirport("DEL", "Indira Gandhi International", "delhi", "del", "new delhi");
+        addAirport("BLR", "Kempegowda International", "bangalore", "blr", "bengaluru");
     }
     
-    private void initializeAirlineCodes() {
-        // NORTH AMERICA
-        airlineCodes.put("american", "AA");
-        airlineCodes.put("american airlines", "AA");
-        airlineCodes.put("aa", "AA");
-        
-        airlineCodes.put("delta", "DL");
-        airlineCodes.put("delta airlines", "DL");
-        airlineCodes.put("dl", "DL");
-        
-        airlineCodes.put("united", "UA");
-        airlineCodes.put("united airlines", "UA");
-        airlineCodes.put("ua", "UA");
-        
-        airlineCodes.put("southwest", "WN");
-        airlineCodes.put("southwest airlines", "WN");
-        airlineCodes.put("wn", "WN");
-        
-        airlineCodes.put("jetblue", "B6");
-        airlineCodes.put("jetblue airways", "B6");
-        airlineCodes.put("b6", "B6");
-        
-        airlineCodes.put("alaska", "AS");
-        airlineCodes.put("alaska airlines", "AS");
-        airlineCodes.put("as", "AS");
-        
-        airlineCodes.put("spirit", "NK");
-        airlineCodes.put("spirit airlines", "NK");
-        airlineCodes.put("nk", "NK");
-        
-        airlineCodes.put("frontier", "F9");
-        airlineCodes.put("frontier airlines", "F9");
-        airlineCodes.put("f9", "F9");
-        
-        // CANADA
-        airlineCodes.put("air canada", "AC");
-        airlineCodes.put("ac", "AC");
-        
-        airlineCodes.put("westjet", "WS");
-        airlineCodes.put("ws", "WS");
-        
-        // EUROPE
-        airlineCodes.put("british airways", "BA");
-        airlineCodes.put("ba", "BA");
-        
-        airlineCodes.put("lufthansa", "LH");
-        airlineCodes.put("lh", "LH");
-        
-        airlineCodes.put("air france", "AF");
-        airlineCodes.put("af", "AF");
-        
-        airlineCodes.put("klm", "KL");
-        airlineCodes.put("klm royal dutch airlines", "KL");
-        airlineCodes.put("kl", "KL");
-        
-        airlineCodes.put("swiss", "LX");
-        airlineCodes.put("swiss international", "LX");
-        airlineCodes.put("lx", "LX");
-        
-        airlineCodes.put("alitalia", "AZ");
-        airlineCodes.put("az", "AZ");
-        
-        airlineCodes.put("iberia", "IB");
-        airlineCodes.put("ib", "IB");
-        
-        airlineCodes.put("sas", "SK");
-        airlineCodes.put("scandinavian airlines", "SK");
-        airlineCodes.put("sk", "SK");
-        
-        airlineCodes.put("finnair", "AY");
-        airlineCodes.put("ay", "AY");
-        
-        airlineCodes.put("virgin atlantic", "VS");
-        airlineCodes.put("vs", "VS");
-        
-        airlineCodes.put("ryanair", "FR");
-        airlineCodes.put("fr", "FR");
-        
-        airlineCodes.put("easyjet", "U2");
-        airlineCodes.put("u2", "U2");
-        
-        airlineCodes.put("austrian", "OS");
-        airlineCodes.put("austrian airlines", "OS");
-        airlineCodes.put("os", "OS");
-        
-        airlineCodes.put("tap", "TP");
-        airlineCodes.put("tap air portugal", "TP");
-        airlineCodes.put("tp", "TP");
-        
-        airlineCodes.put("aer lingus", "EI");
-        airlineCodes.put("ei", "EI");
-        
-        airlineCodes.put("norwegian", "DY");
-        airlineCodes.put("norwegian air", "DY");
-        airlineCodes.put("dy", "DY");
-        
-        // MIDDLE EAST
-        airlineCodes.put("emirates", "EK");
-        airlineCodes.put("ek", "EK");
-        
-        airlineCodes.put("qatar airways", "QR");
-        airlineCodes.put("qatar", "QR");
-        airlineCodes.put("qr", "QR");
-        
-        airlineCodes.put("etihad", "EY");
-        airlineCodes.put("etihad airways", "EY");
-        airlineCodes.put("ey", "EY");
-        
-        airlineCodes.put("turkish airlines", "TK");
-        airlineCodes.put("turkish", "TK");
-        airlineCodes.put("tk", "TK");
-        
-        airlineCodes.put("el al", "LY");
-        airlineCodes.put("ly", "LY");
-        
-        airlineCodes.put("saudia", "SV");
-        airlineCodes.put("saudi arabian airlines", "SV");
-        airlineCodes.put("sv", "SV");
-        
-        airlineCodes.put("kuwait airways", "KU");
-        airlineCodes.put("ku", "KU");
-        
-        // ASIA-PACIFIC
-        airlineCodes.put("singapore airlines", "SQ");
-        airlineCodes.put("singapore", "SQ");
-        airlineCodes.put("sq", "SQ");
-        
-        airlineCodes.put("cathay pacific", "CX");
-        airlineCodes.put("cathay", "CX");
-        airlineCodes.put("cx", "CX");
-        
-        airlineCodes.put("japan airlines", "JL");
-        airlineCodes.put("jal", "JL");
-        airlineCodes.put("jl", "JL");
-        
-        airlineCodes.put("ana", "NH");
-        airlineCodes.put("all nippon airways", "NH");
-        airlineCodes.put("nh", "NH");
-        
-        airlineCodes.put("korean air", "KE");
-        airlineCodes.put("ke", "KE");
-        
-        airlineCodes.put("asiana", "OZ");
-        airlineCodes.put("asiana airlines", "OZ");
-        airlineCodes.put("oz", "OZ");
-        
-        airlineCodes.put("china eastern", "MU");
-        airlineCodes.put("mu", "MU");
-        
-        airlineCodes.put("china southern", "CZ");
-        airlineCodes.put("cz", "CZ");
-        
-        airlineCodes.put("air china", "CA");
-        airlineCodes.put("ca", "CA");
-        
-        airlineCodes.put("thai airways", "TG");
-        airlineCodes.put("thai", "TG");
-        airlineCodes.put("tg", "TG");
-        
-        airlineCodes.put("malaysia airlines", "MH");
-        airlineCodes.put("malaysia", "MH");
-        airlineCodes.put("mh", "MH");
-        
-        airlineCodes.put("garuda indonesia", "GA");
-        airlineCodes.put("garuda", "GA");
-        airlineCodes.put("ga", "GA");
-        
-        airlineCodes.put("philippine airlines", "PR");
-        airlineCodes.put("pal", "PR");
-        airlineCodes.put("pr", "PR");
-        
-        airlineCodes.put("vietnam airlines", "VN");
-        airlineCodes.put("vn", "VN");
-        
-        airlineCodes.put("air india", "AI");
-        airlineCodes.put("ai", "AI");
-        
-        airlineCodes.put("indigo", "6E");
-        airlineCodes.put("6e", "6E");
-        
-        airlineCodes.put("spicejet", "SG");
-        airlineCodes.put("sg", "SG");
-        
-        airlineCodes.put("qantas", "QF");
-        airlineCodes.put("qf", "QF");
-        
-        airlineCodes.put("jetstar", "JQ");
-        airlineCodes.put("jq", "JQ");
-        
-        airlineCodes.put("virgin australia", "VA");
-        airlineCodes.put("va", "VA");
-        
-        airlineCodes.put("air new zealand", "NZ");
-        airlineCodes.put("nz", "NZ");
-        
-        // AFRICA
-        airlineCodes.put("south african airways", "SA");
-        airlineCodes.put("saa", "SA");
-        airlineCodes.put("sa", "SA");
-        
-        airlineCodes.put("egyptair", "MS");
-        airlineCodes.put("ms", "MS");
-        
-        airlineCodes.put("ethiopian airlines", "ET");
-        airlineCodes.put("ethiopian", "ET");
-        airlineCodes.put("et", "ET");
-        
-        airlineCodes.put("kenya airways", "KQ");
-        airlineCodes.put("kq", "KQ");
-        
-        airlineCodes.put("royal air maroc", "AT");
-        airlineCodes.put("ram", "AT");
-        airlineCodes.put("at", "AT");
-        
-        // SOUTH AMERICA
-        airlineCodes.put("latam", "LA");
-        airlineCodes.put("la", "LA");
-        
-        airlineCodes.put("avianca", "AV");
-        airlineCodes.put("av", "AV");
-        
-        airlineCodes.put("copa airlines", "CM");
-        airlineCodes.put("copa", "CM");
-        airlineCodes.put("cm", "CM");
-        
-        airlineCodes.put("azul", "AD");
-        airlineCodes.put("ad", "AD");
-        
-        airlineCodes.put("gol", "G3");
-        airlineCodes.put("g3", "G3");
-        
-        airlineCodes.put("aeromexico", "AM");
-        airlineCodes.put("am", "AM");
-        
-        // RUSSIA & CIS
-        airlineCodes.put("aeroflot", "SU");
-        airlineCodes.put("su", "SU");
-        
-        airlineCodes.put("s7 airlines", "S7");
-        airlineCodes.put("s7", "S7");
-        
-        airlineCodes.put("rossiya", "FV");
-        airlineCodes.put("fv", "FV");
-        
-        // LOW COST CARRIERS
-        airlineCodes.put("cebu pacific", "5J");
-        airlineCodes.put("5j", "5J");
-        
-        airlineCodes.put("airasia", "AK");
-        airlineCodes.put("ak", "AK");
-        
-        airlineCodes.put("scoot", "TR");
-        airlineCodes.put("tr", "TR");
-        
-        airlineCodes.put("wizz air", "W6");
-        airlineCodes.put("wizz", "W6");
-        airlineCodes.put("w6", "W6");
-        
-        airlineCodes.put("vueling", "VY");
-        airlineCodes.put("vy", "VY");
+    // Inner class for airport information
+    private static class AirportInfo {
+        String code;
+        String name;
+        List<String> aliases;
+        
+        AirportInfo(String code, String name, List<String> aliases) {
+            this.code = code;
+            this.name = name;
+            this.aliases = aliases;
+        }
     }
     
-    public QueryIntent parseQuery(String userInput) {
-        String query = userInput.toLowerCase().trim();
-        QueryIntent intent = new QueryIntent();
+    private static void addAirport(String code, String name, String... aliases) {
+        AIRPORT_MAPPING.put(code.toLowerCase(), new AirportInfo(code, name, Arrays.asList(aliases)));
+        for (String alias : aliases) {
+            AIRPORT_MAPPING.put(alias.toLowerCase(), new AirportInfo(code, name, Arrays.asList(aliases)));
+        }
+    }
+    
+    // Enhanced regex patterns
+    private static final Pattern FLIGHT_NUMBER_PATTERN = Pattern.compile("\\b([A-Z]{1,3}\\d{1,4}[A-Z]?)\\b", Pattern.CASE_INSENSITIVE);
+    private static final Pattern AIRPORT_CODE_PATTERN = Pattern.compile("\\b([A-Z]{3})\\b");
+    private static final Pattern ROUTE_PATTERN = Pattern.compile("\\b(?:from|departure|departing|leaving)\\s+([a-zA-Z\\s]+?)\\s+(?:to|arrival|arriving|going|bound|→|->)\\s+([a-zA-Z\\s]+?)(?:\\s+on\\s|\\s+at\\s|\\s*$|\\s+\\d)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern FUZZY_ROUTE_PATTERN = Pattern.compile("\\b([a-zA-Z\\s]{2,20}?)\\s+(?:to|→|->)\\s+([a-zA-Z\\s]{2,20}?)(?:\\s+on\\s|\\s+at\\s|\\s*$|\\s+\\d)", Pattern.CASE_INSENSITIVE);
+    
+    // Date and time patterns
+    private static final Pattern DATE_PATTERN = Pattern.compile("\\b(?:on\\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|today|tomorrow|\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)\\b", Pattern.CASE_INSENSITIVE);
+    private static final Pattern TIME_PATTERN = Pattern.compile("\\b(?:at\\s+)?(\\d{1,2}(?::\\d{2})?(?:\\s*(?:am|pm|AM|PM))?)\\b", Pattern.CASE_INSENSITIVE);
+    
+    /**
+     * Enhanced method to extract flight parameters from natural language query
+     */
+    public Map<String, String> extractFlightParameters(String query) {
+        logger.debug("Extracting parameters from query: {}", query);
         
-        // Check for greeting or help
-        if (isGreeting(query)) {
-            intent.setType(QueryType.GREETING);
-            return intent;
+        Map<String, String> params = new HashMap<>();
+        String lowerQuery = query.toLowerCase().trim();
+        
+        // Extract date and time information
+        extractTemporalInfo(lowerQuery, params);
+        
+        // Determine query type with enhanced logic
+        String queryType = determineQueryType(lowerQuery);
+        params.put("queryType", queryType);
+        
+        // Extract specific parameters based on query type
+        switch (queryType) {
+            case "airline":
+                extractEnhancedAirlineInfo(lowerQuery, params);
+                break;
+            case "departure":
+                extractEnhancedDepartureInfo(lowerQuery, params);
+                break;
+            case "arrival":
+                extractEnhancedArrivalInfo(lowerQuery, params);
+                break;
+            case "route":
+                extractEnhancedRouteInfo(lowerQuery, params);
+                break;
+            case "flight_number":
+                extractEnhancedFlightNumberInfo(query, params);
+                break;
+            default:
+                params.put("queryType", "active");
+                break;
         }
         
-        if (isHelp(query)) {
-            intent.setType(QueryType.HELP);
-            return intent;
+        // Extract limit with better patterns
+        extractEnhancedLimit(lowerQuery, params);
+        
+        // Add confidence score
+        params.put("confidence", calculateConfidence(params));
+        
+        logger.debug("Extracted parameters: {}", params);
+        return params;
+    }
+    
+    /**
+     * Extract temporal information (dates, times, days)
+     */
+    private void extractTemporalInfo(String query, Map<String, String> params) {
+        Matcher dateMatcher = DATE_PATTERN.matcher(query);
+        if (dateMatcher.find()) {
+            params.put("date", dateMatcher.group(1));
         }
         
-        // Extract flight number if present
-        Matcher flightMatcher = flightNumberPattern.matcher(userInput);
-        if (flightMatcher.find()) {
-            intent.setType(QueryType.FLIGHT_NUMBER);
-            intent.setFlightNumber(flightMatcher.group(1).toUpperCase());
-            intent.setLimit(extractLimit(query));
-            return intent;
+        Matcher timeMatcher = TIME_PATTERN.matcher(query);
+        if (timeMatcher.find()) {
+            params.put("time", timeMatcher.group(1));
+        }
+    }
+    
+    /**
+     * Enhanced query type determination with better accuracy
+     */
+    private String determineQueryType(String query) {
+        // Flight number has highest priority
+        if (FLIGHT_NUMBER_PATTERN.matcher(query).find()) {
+            return "flight_number";
         }
         
-        // Check for route queries (from X to Y)
-        Matcher routeMatcher = routePattern.matcher(query);
+        // Route patterns with multiple variations
+        if (containsRoutePatterns(query)) {
+            return "route";
+        }
+        
+        // Airline patterns
+        if (containsAirlinePatterns(query)) {
+            return "airline";
+        }
+        
+        // Departure patterns
+        if (containsEnhancedDeparturePatterns(query)) {
+            return "departure";
+        }
+        
+        // Arrival patterns
+        if (containsEnhancedArrivalPatterns(query)) {
+            return "arrival";
+        }
+        
+        // Status queries
+        if (containsStatusPatterns(query)) {
+            return "active";
+        }
+        
+        return "active"; // Default
+    }
+    
+    /**
+     * Check for route patterns with multiple variations
+     */
+    private boolean containsRoutePatterns(String query) {
+        return ROUTE_PATTERN.matcher(query).find() || 
+               FUZZY_ROUTE_PATTERN.matcher(query).find() ||
+               query.matches(".*\\b\\w+\\s+(to|→|->)\\s+\\w+.*");
+    }
+    
+    /**
+     * Enhanced airline pattern detection
+     */
+    private boolean containsAirlinePatterns(String query) {
+        String[] airlineKeywords = {"airline", "carrier", "company", "airways", "air"};
+        for (String keyword : airlineKeywords) {
+            if (query.contains(keyword)) return true;
+        }
+        
+        // Check for airline names with fuzzy matching
+        for (String airlineName : AIRLINE_MAPPING.keySet()) {
+            if (query.contains(airlineName) || fuzzyMatch(query, airlineName, 0.8)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Enhanced departure pattern detection
+     */
+    private boolean containsEnhancedDeparturePatterns(String query) {
+        String[] keywords = {"departure", "departing", "leaving", "from", "outbound", "take off", "takeoff"};
+        return Arrays.stream(keywords).anyMatch(query::contains);
+    }
+    
+    /**
+     * Enhanced arrival pattern detection
+     */
+    private boolean containsEnhancedArrivalPatterns(String query) {
+        String[] keywords = {"arrival", "arriving", "landing", "to", "destination", "inbound", "going to"};
+        return Arrays.stream(keywords).anyMatch(query::contains);
+    }
+    
+    /**
+     * Status pattern detection
+     */
+    private boolean containsStatusPatterns(String query) {
+        String[] keywords = {"active", "live", "current", "now", "status", "tracking", "real time", "realtime"};
+        return Arrays.stream(keywords).anyMatch(query::contains);
+    }
+    
+    /**
+     * Enhanced airline information extraction with fuzzy matching
+     */
+    private void extractEnhancedAirlineInfo(String query, Map<String, String> params) {
+        String bestMatch = null;
+        double bestScore = 0.0;
+        
+        for (Map.Entry<String, String> entry : AIRLINE_MAPPING.entrySet()) {
+            String airlineName = entry.getKey();
+            if (query.contains(airlineName)) {
+                double score = (double) airlineName.length() / query.length();
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMatch = entry.getValue();
+                }
+            } else {
+                double fuzzyScore = fuzzyMatchScore(query, airlineName);
+                if (fuzzyScore > 0.7 && fuzzyScore > bestScore) {
+                    bestScore = fuzzyScore;
+                    bestMatch = entry.getValue();
+                }
+            }
+        }
+        
+        if (bestMatch != null) {
+            params.put("airline", bestMatch);
+        }
+        
+        // Fallback to airline code pattern
+        if (!params.containsKey("airline")) {
+            Matcher matcher = Pattern.compile("\\b([A-Z]{2,3})\\b").matcher(query.toUpperCase());
+            if (matcher.find()) {
+                params.put("airline", matcher.group(1));
+            }
+        }
+    }
+    
+    /**
+     * Enhanced route information extraction with better parsing
+     */
+    private void extractEnhancedRouteInfo(String query, Map<String, String> params) {
+        logger.debug("Extracting route info from: {}", query);
+        
+        // Try multiple route patterns
+        Matcher routeMatcher = ROUTE_PATTERN.matcher(query);
         if (routeMatcher.find()) {
-            String departure = routeMatcher.group(2).trim();
-            String arrival = routeMatcher.group(4).trim();
+            String departure = routeMatcher.group(1).trim();
+            String arrival = routeMatcher.group(2).trim();
+            logger.debug("Route pattern matched - departure: '{}', arrival: '{}'", departure, arrival);
             
-            String depCode = resolveAirportCode(departure);
-            String arrCode = resolveAirportCode(arrival);
+            String depCode = findBestAirportMatch(departure);
+            String arrCode = findBestAirportMatch(arrival);
+            logger.debug("Airport codes - departure: '{}', arrival: '{}'", depCode, arrCode);
             
-            if (depCode != null && arrCode != null) {
-                intent.setType(QueryType.ROUTE);
-                intent.setDepartureAirport(depCode);
-                intent.setArrivalAirport(arrCode);
-                intent.setLimit(extractLimit(query));
-                return intent;
-            }
+            if (depCode != null) params.put("departure", depCode);
+            if (arrCode != null) params.put("arrival", arrCode);
+            return;
         }
         
-        // Check for departure queries
-        Matcher departureMatcher = departurePattern.matcher(query);
-        if (departureMatcher.find()) {
-            String departure = departureMatcher.group(2).trim();
-            String depCode = resolveAirportCode(departure);
+        // Try fuzzy route pattern
+        Matcher fuzzyMatcher = FUZZY_ROUTE_PATTERN.matcher(query);
+        if (fuzzyMatcher.find()) {
+            String departure = fuzzyMatcher.group(1).trim();
+            String arrival = fuzzyMatcher.group(2).trim();
+            logger.debug("Fuzzy pattern matched - departure: '{}', arrival: '{}'", departure, arrival);
             
-            if (depCode != null) {
-                intent.setType(QueryType.DEPARTURE);
-                intent.setDepartureAirport(depCode);
-                intent.setLimit(extractLimit(query));
-                return intent;
-            }
-        }
-        
-        // Check for arrival queries
-        Matcher arrivalMatcher = arrivalPattern.matcher(query);
-        if (arrivalMatcher.find()) {
-            String arrival = arrivalMatcher.group(2).trim();
-            String arrCode = resolveAirportCode(arrival);
+            String depCode = findBestAirportMatch(departure);
+            String arrCode = findBestAirportMatch(arrival);
+            logger.debug("Fuzzy airport codes - departure: '{}', arrival: '{}'", depCode, arrCode);
             
-            if (arrCode != null) {
-                intent.setType(QueryType.ARRIVAL);
-                intent.setArrivalAirport(arrCode);
-                intent.setLimit(extractLimit(query));
-                return intent;
-            }
+            if (depCode != null) params.put("departure", depCode);
+            if (arrCode != null) params.put("arrival", arrCode);
         }
         
-        // Check for airline queries
-        Matcher airlineMatcher = airlinePattern.matcher(query);
-        if (airlineMatcher.find()) {
-            String airline = airlineMatcher.group(2).trim();
-            String airlineCode = resolveAirlineCode(airline);
-            
-            if (airlineCode != null) {
-                intent.setType(QueryType.AIRLINE);
-                intent.setAirline(airlineCode);
-                intent.setLimit(extractLimit(query));
-                return intent;
-            }
-        }
-        
-        // Check for general flight queries
-        if (query.contains("flight") || query.contains("plane") || query.contains("aircraft")) {
-            intent.setType(QueryType.ACTIVE_FLIGHTS);
-            intent.setLimit(extractLimit(query));
-            return intent;
-        }
-        
-        // Default to unknown
-        intent.setType(QueryType.UNKNOWN);
-        return intent;
+        logger.debug("Route extraction completed - params: {}", params);
     }
     
-    private boolean isGreeting(String query) {
-        return query.matches(".*\\b(hello|hi|hey|good morning|good afternoon|good evening|greetings)\\b.*");
+    /**
+     * Find the best airport match with fuzzy matching
+     */
+    private String findBestAirportMatch(String input) {
+        if (input == null || input.trim().isEmpty()) return null;
+        
+        String cleanInput = input.toLowerCase().trim();
+        logger.debug("Finding airport match for: '{}'", cleanInput);
+        
+        // Direct lookup first
+        AirportInfo directMatch = AIRPORT_MAPPING.get(cleanInput);
+        if (directMatch != null) {
+            logger.debug("Direct match found: {} -> {}", cleanInput, directMatch.code);
+            return directMatch.code;
+        }
+        
+        // Fuzzy matching
+        String bestMatch = null;
+        double bestScore = 0.0;
+        
+        for (Map.Entry<String, AirportInfo> entry : AIRPORT_MAPPING.entrySet()) {
+            String key = entry.getKey();
+            double score = fuzzyMatchScore(cleanInput, key);
+            
+            if (score > 0.6 && score > bestScore) {
+                bestScore = score;
+                bestMatch = entry.getValue().code;
+                logger.debug("Better fuzzy match: {} -> {} (score: {})", cleanInput, bestMatch, score);
+            }
+        }
+        
+        logger.debug("Best airport match for '{}': {} (score: {})", cleanInput, bestMatch, bestScore);
+        return bestMatch;
     }
     
-    private boolean isHelp(String query) {
-        return query.matches(".*\\b(help|what can you do|how does this work|commands|options)\\b.*");
+    /**
+     * Calculate fuzzy match score between two strings
+     */
+    private double fuzzyMatchScore(String s1, String s2) {
+        if (s1 == null || s2 == null) return 0.0;
+        if (s1.equals(s2)) return 1.0;
+        
+        // Simple similarity based on common characters
+        int maxLen = Math.max(s1.length(), s2.length());
+        if (maxLen == 0) return 1.0;
+        
+        return 1.0 - (double) levenshteinDistance(s1, s2) / maxLen;
     }
     
-    private int extractLimit(String query) {
-        Pattern limitPattern = Pattern.compile("\\b(\\d+)\\s+(flight|result)s?\\b");
-        Matcher matcher = limitPattern.matcher(query);
+    /**
+     * Simple fuzzy matching
+     */
+    private boolean fuzzyMatch(String text, String pattern, double threshold) {
+        return fuzzyMatchScore(text, pattern) >= threshold;
+    }
+    
+    /**
+     * Calculate Levenshtein distance
+     */
+    private int levenshteinDistance(String s1, String s2) {
+        int[][] dp = new int[s1.length() + 1][s2.length() + 1];
+        
+        for (int i = 0; i <= s1.length(); i++) {
+            dp[i][0] = i;
+        }
+        for (int j = 0; j <= s2.length(); j++) {
+            dp[0][j] = j;
+        }
+        
+        for (int i = 1; i <= s1.length(); i++) {
+            for (int j = 1; j <= s2.length(); j++) {
+                if (s1.charAt(i - 1) == s2.charAt(j - 1)) {
+                    dp[i][j] = dp[i - 1][j - 1];
+                } else {
+                    dp[i][j] = 1 + Math.min(dp[i - 1][j], Math.min(dp[i][j - 1], dp[i - 1][j - 1]));
+                }
+            }
+        }
+        
+        return dp[s1.length()][s2.length()];
+    }
+    
+    /**
+     * Enhanced departure information extraction
+     */
+    private void extractEnhancedDepartureInfo(String query, Map<String, String> params) {
+        String airportCode = findBestAirportMatch(extractLocationFromQuery(query, "departure"));
+        if (airportCode != null) {
+            params.put("departure", airportCode);
+        }
+    }
+    
+    /**
+     * Enhanced arrival information extraction
+     */
+    private void extractEnhancedArrivalInfo(String query, Map<String, String> params) {
+        String airportCode = findBestAirportMatch(extractLocationFromQuery(query, "arrival"));
+        if (airportCode != null) {
+            params.put("arrival", airportCode);
+        }
+    }
+    
+    /**
+     * Extract location information from query based on context
+     */
+    private String extractLocationFromQuery(String query, String context) {
+        // This is a simplified implementation - could be enhanced further
+        String[] words = query.split("\\s+");
+        for (int i = 0; i < words.length; i++) {
+            String word = words[i].toLowerCase();
+            if (AIRPORT_MAPPING.containsKey(word)) {
+                return word;
+            }
+            
+            // Check multi-word locations
+            if (i < words.length - 1) {
+                String twoWords = word + " " + words[i + 1].toLowerCase();
+                if (AIRPORT_MAPPING.containsKey(twoWords)) {
+                    return twoWords;
+                }
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Enhanced flight number extraction
+     */
+    private void extractEnhancedFlightNumberInfo(String query, Map<String, String> params) {
+        Matcher matcher = FLIGHT_NUMBER_PATTERN.matcher(query);
         if (matcher.find()) {
-            int limit = Integer.parseInt(matcher.group(1));
-            return Math.min(limit, 20); // Cap at 20
+            params.put("flightNumber", matcher.group(1).toUpperCase());
         }
-        
-        if (query.contains("few")) return 3;
-        if (query.contains("several")) return 5;
-        if (query.contains("many") || query.contains("all")) return 15;
-        
-        return 5; // Default
     }
     
-    private String resolveAirportCode(String input) {
-        String normalized = input.toLowerCase().trim();
+    /**
+     * Enhanced limit extraction with more patterns
+     */
+    private void extractEnhancedLimit(String query, Map<String, String> params) {
+        Pattern[] limitPatterns = {
+            Pattern.compile("\\b(?:show|display|give|find)\\s+(?:me\\s+)?(?:the\\s+)?(?:top\\s+|first\\s+)?(\\d+)", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\\b(\\d+)\\s+(?:flights|results)", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\\blimit\\s+(\\d+)", Pattern.CASE_INSENSITIVE)
+        };
         
-        // Direct lookup
-        if (airportCodes.containsKey(normalized)) {
-            return airportCodes.get(normalized);
-        }
-        
-        // Check if it's already a code
-        if (normalized.length() == 3 && normalized.matches("[a-z]{3}")) {
-            return normalized.toUpperCase();
-        }
-        
-        // Partial matching
-        for (Map.Entry<String, String> entry : airportCodes.entrySet()) {
-            if (entry.getKey().contains(normalized) || normalized.contains(entry.getKey())) {
-                return entry.getValue();
+        for (Pattern pattern : limitPatterns) {
+            Matcher matcher = pattern.matcher(query);
+            if (matcher.find()) {
+                int limit = Math.min(Integer.parseInt(matcher.group(1)), 50);
+                params.put("limit", String.valueOf(limit));
+                return;
             }
         }
         
-        return null;
+        params.put("limit", "10"); // Default
     }
     
-    private String resolveAirlineCode(String input) {
-        String normalized = input.toLowerCase().trim();
+    /**
+     * Calculate confidence score for extracted parameters
+     */
+    private String calculateConfidence(Map<String, String> params) {
+        double score = 0.5; // Base score
         
-        // Direct lookup
-        if (airlineCodes.containsKey(normalized)) {
-            return airlineCodes.get(normalized);
+        if (params.containsKey("departure") && params.containsKey("arrival")) {
+            score += 0.3;
+        } else if (params.containsKey("departure") || params.containsKey("arrival")) {
+            score += 0.2;
         }
         
-        // Check if it's already a code
-        if (normalized.length() >= 2 && normalized.length() <= 3 && normalized.matches("[a-z0-9]+")) {
-            return normalized.toUpperCase();
+        if (params.containsKey("airline")) {
+            score += 0.1;
         }
         
-        return null;
-    }
-    
-    public enum QueryType {
-        GREETING,
-        HELP,
-        FLIGHT_NUMBER,
-        ROUTE,
-        DEPARTURE,
-        ARRIVAL,
-        AIRLINE,
-        ACTIVE_FLIGHTS,
-        UNKNOWN
-    }
-    
-    public static class QueryIntent {
-        private QueryType type;
-        private String flightNumber;
-        private String departureAirport;
-        private String arrivalAirport;
-        private String airline;
-        private int limit = 5;
+        if (params.containsKey("flightNumber")) {
+            score += 0.2;
+        }
         
-        // Getters and setters
-        public QueryType getType() { return type; }
-        public void setType(QueryType type) { this.type = type; }
+        if (params.containsKey("date")) {
+            score += 0.1;
+        }
         
-        public String getFlightNumber() { return flightNumber; }
-        public void setFlightNumber(String flightNumber) { this.flightNumber = flightNumber; }
-        
-        public String getDepartureAirport() { return departureAirport; }
-        public void setDepartureAirport(String departureAirport) { this.departureAirport = departureAirport; }
-        
-        public String getArrivalAirport() { return arrivalAirport; }
-        public void setArrivalAirport(String arrivalAirport) { this.arrivalAirport = arrivalAirport; }
-        
-        public String getAirline() { return airline; }
-        public void setAirline(String airline) { this.airline = airline; }
-        
-        public int getLimit() { return limit; }
-        public void setLimit(int limit) { this.limit = limit; }
+        return String.format("%.2f", Math.min(score, 1.0));
     }
 }

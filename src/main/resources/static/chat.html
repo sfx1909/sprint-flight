@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flight Chat Assistant - Sprint Flight</title>
+    <title>AI Flight Desk Assistant - Sprint Flight</title>
     <style>
         * {
             margin: 0;
@@ -12,7 +12,23 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Ox                <div class="suggestions" id="suggestions">
+            <button class="suggestion-chip" onclick="sendSuggestion('What flights are available from JFK to LAX?')">🇺🇸 JFK to LAX</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('I need help finding a connecting flight through Frankfurt')">🔄 Connections</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('Can you check the status of flight BA456?')">📍 Flight Status</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('Show me all Lufthansa flights departing today')">🇩🇪 Lufthansa</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('What are the departure times from Heathrow to Dubai?')">🌍 LHR to DXB</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('I need flights from Tokyo to Singapore this week')">🌏 Asia Routes</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('Help me understand what you can do')">❓ Help</button>
+        </div>s="suggestions" id="suggestions">
+            <button class="suggestion-chip" onclick="sendSuggestion('What flights are available from JFK to LAX?')">🇺🇸 JFK to LAX</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('I need help finding a connecting flight through Frankfurt')">🔄 Connections</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('Can you check the status of flight BA456?')">📍 Flight Status</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('Show me all Lufthansa flights departing today')">🇩🇪 Lufthansa</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('What are the departure times from Heathrow to Dubai?')">🌍 LHR to DXB</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('I need flights from Tokyo to Singapore this week')">🌏 Asia Routes</button>
+            <button class="suggestion-chip" onclick="sendSuggestion('Help me understand what you can do')">❓ Help</button>
+        </div>ntu, Cantarell, sans-serif;
             background: linear-gradient(135deg, #3b82f6 0%, #1e40af 50%, #6366f1 100%);
             min-height: 100vh;
             display: flex;
@@ -399,18 +415,18 @@
 <body>
     <div class="chat-container">
         <div class="chat-header">
-            <h1>✈️ Flight Chat Assistant</h1>
-            <p>Ask me anything about flights in natural language</p>
+            <h1>🤖 AI Flight Desk Assistant</h1>
+            <p>Your intelligent flight information assistant - Powered by Google Gemini</p>
         </div>
 
         <div class="chat-messages" id="chatMessages">
             <div class="welcome-message">
-                <h2>👋 Welcome!</h2>
-                <p>I'm your global flight assistant. Try asking me things like:</p>
+                <h2>👋 Hello! I'm your AI Flight Assistant</h2>
+                <p>I'm here to help you with all your flight information needs. Just talk to me naturally, like you would at an airport information desk:</p>
                 <div class="suggestions" style="justify-content: center; margin-top: 15px;">
-                    <button class="suggestion-chip" onclick="sendSuggestion('Show me flights from London to Tokyo')">🌍 LHR to NRT</button>
-                    <button class="suggestion-chip" onclick="sendSuggestion('Emirates flights from Dubai')">✈️ Emirates Dubai</button>
-                    <button class="suggestion-chip" onclick="sendSuggestion('What flights are leaving from Frankfurt?')">🛫 Frankfurt departures</button>
+                    <button class="suggestion-chip" onclick="sendSuggestion('Hi, I need flights from London to New York tomorrow')">🗽 London to NYC</button>
+                    <button class="suggestion-chip" onclick="sendSuggestion('Can you help me find Emirates flights to Dubai?')">✈️ Emirates to Dubai</button>
+                    <button class="suggestion-chip" onclick="sendSuggestion('What flights are leaving Frankfurt right now?')">🛫 Frankfurt departures</button>
                 </div>
             </div>
         </div>

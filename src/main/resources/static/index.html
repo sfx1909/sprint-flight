@@ -107,12 +107,24 @@
     <div class="container">
         <h1>🛩️ Sprint Flight API Test Interface</h1>
         <p style="text-align: center; color: #666;">
-            Test your Spring Boot Flight API endpoints. Make sure your application is running on localhost:8080
+            Test your Spring Boot Flight API endpoints with aviation data integration and AI-powered natural language queries
         </p>
-        <div style="text-align: center; margin: 20px 0;">
-            <a href="/chat.html" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 24px; text-decoration: none; border-radius: 25px; font-weight: 500; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); transition: transform 0.2s ease;">
-                💬 Try the Chat Interface
-            </a>
+    </div>
+
+    <div class="container">
+        <h2>🤖 AI Flight Assistant (NEW!)</h2>
+        <div class="endpoint">
+            <h3>Natural Language Flight Queries</h3>
+            <div class="endpoint-url">POST /api/conversation/query</div>
+            <div class="input-group">
+                <input type="text" id="ai-query" placeholder="Ask me about flights in natural language..." style="width: 60%;" value="Show me American Airlines flights">
+                <button onclick="testAIQuery()">Ask AI Assistant</button>
+                <button onclick="getAIHelp()">Get Help & Examples</button>
+            </div>
+            <div id="ai-result" class="result" style="display: none;"></div>
+            <div style="margin-top: 10px; font-size: 14px; color: #666;">
+                <strong>Try asking:</strong> "Show me Delta flights", "Flights from JFK to LAX", "What's the status of flight AA100?", "Active flights departing from Chicago"
+            </div>
         </div>
     </div>
 
@@ -205,16 +217,28 @@
     <div class="container">
         <h2>⚠️ Setup Instructions</h2>
         <ol>
-            <li>Sign up for a free API key at <a href="https://aviationstack.com/" target="_blank">AviationStack</a></li>
-            <li>Update your <code>application.properties</code> file with your API key:
+            <li><strong>Flight API:</strong> Sign up for a free API key at <a href="https://aviationstack.com/" target="_blank">AviationStack</a></li>
+            <li><strong>Gemini AI (Optional):</strong> Get a free API key at <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a></li>
+            <li><strong>Configure:</strong> Update your <code>application.properties</code> file:
                 <div style="background-color: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace;">
-                    flight.api.key=YOUR_ACTUAL_API_KEY_HERE
+                    flight.api.key=YOUR_ACTUAL_AVIATIONSTACK_KEY_HERE<br>
+                    gemini.api.key=YOUR_ACTUAL_GEMINI_KEY_HERE
                 </div>
             </li>
-            <li>Start your Spring Boot application</li>
-            <li>Use this page to test the API endpoints</li>
+            <li><strong>Restart:</strong> Stop and restart your Spring Boot application</li>
+            <li><strong>Test:</strong> Use this page or the API endpoints directly</li>
         </ol>
-        <p><strong>Note:</strong> The free tier of AviationStack has rate limits. Use reasonable limit values to avoid exceeding them.</p>
+        <p><strong>Note:</strong> The AI assistant works with fallback responses even without a Gemini API key, but provides enhanced conversational responses when configured.</p>
+        
+        <h3>🚀 Features Available:</h3>
+        <ul>
+            <li>✈️ <strong>Real-time flight data</strong> from AviationStack API</li>
+            <li>🤖 <strong>AI-powered natural language queries</strong> via Gemini integration</li>
+            <li>🔍 <strong>Multiple search options:</strong> airline, airport, route, flight number</li>
+            <li>🌐 <strong>RESTful API</strong> with comprehensive endpoints</li>
+            <li>📱 <strong>Web interface</strong> for easy testing and interaction</li>
+            <li>🛡️ <strong>Rate limiting & error handling</strong> built-in</li>
+        </ul>
     </div>
 
     <script>
@@ -289,9 +313,54 @@
             testEndpoint(`/api/flights/number/${flightNumber}?limit=${limit}`, 'flight-number-result');
         }
         
-        function testActiveFlightsEndpoint() {
-            const limit = document.getElementById('active-limit').value;
-            testEndpoint(`/api/flights/active?limit=${limit}`, 'active-result');
+        function testAIQuery() {
+            const query = document.getElementById('ai-query').value.trim();
+            if (!query) {
+                alert('Please enter a query');
+                return;
+            }
+            
+            const resultDiv = document.getElementById('ai-result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result loading';
+            resultDiv.textContent = 'Processing your query with AI...';
+            
+            fetch(API_BASE_URL + '/api/conversation/query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ query: query })
+            })
+            .then(response => response.json())
+            .then(data => {
+                resultDiv.className = 'result success';
+                resultDiv.textContent = '🤖 AI Response:\n\n' + data.response + '\n\n' + 
+                                      '⏰ Processed at: ' + new Date(data.timestamp).toLocaleString();
+            })
+            .catch(error => {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'Error: ' + error.message + '\n\nMake sure your application is running and try again.';
+            });
+        }
+        
+        function getAIHelp() {
+            const resultDiv = document.getElementById('ai-result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result loading';
+            resultDiv.textContent = 'Getting AI assistant help...';
+            
+            fetch(API_BASE_URL + '/api/conversation/help')
+            .then(response => response.json())
+            .then(data => {
+                resultDiv.className = 'result success';
+                resultDiv.textContent = data.help + '\n\n📋 Example Queries:\n' + 
+                                      Object.entries(data.examples).map(([key, value]) => `• ${value}`).join('\n');
+            })
+            .catch(error => {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'Error: ' + error.message;
+            });
         }
     </script>
 </body>

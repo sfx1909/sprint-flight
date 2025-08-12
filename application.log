@@ -24,3 +24,6 @@ nohup: ignoring input
 📡 API Base URL: http://localhost:8080/api/flights
 🌐 Web Interface: http://localhost:8080
 🏥 Health Check: http://localhost:8080/api/flights/health
+2025-08-12T18:17:12.237+02:00  INFO 21680 --- [sprint-flight] [nio-8080-exec-2] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-08-12T18:17:12.238+02:00  INFO 21680 --- [sprint-flight] [nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2025-08-12T18:17:12.243+02:00  INFO 21680 --- [sprint-flight] [nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : Completed initialization in 4 ms

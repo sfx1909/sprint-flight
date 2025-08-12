@@ -35,3 +35,19 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Security - Environment Variables ###
+.env
+application-*.properties
+**/application-local.properties
+**/application-dev.properties
+**/application-prod.properties
+
+### Logs that might contain sensitive data ###
+logs/
+*.log
+*.log.*
+
+### Temporary files ###
+*.tmp
+*.temp

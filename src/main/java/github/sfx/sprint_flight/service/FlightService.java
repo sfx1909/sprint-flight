@@ -11,6 +11,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
+import jakarta.annotation.PostConstruct;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +29,20 @@ public class FlightService {
     
     @Value("${flight.api.timeout:10000}")
     private int timeout;
+    
+    /**
+     * Validate API key configuration on service initialization
+     */
+    @PostConstruct
+    public void validateConfiguration() {
+        if (apiKey == null || apiKey.trim().isEmpty() || 
+            apiKey.contains("your_") || apiKey.contains("YOUR_")) {
+            logger.error("⚠️  SECURITY ERROR: Flight API key not properly configured!");
+            logger.error("   Please set FLIGHT_API_KEY environment variable or create .env file");
+            throw new IllegalStateException("Flight API key not configured - check your environment variables");
+        }
+        logger.info("✅ Flight API configuration validated");
+    }
     
     /**
      * Get flights by airline IATA code
